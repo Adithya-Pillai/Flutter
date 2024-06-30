@@ -15,7 +15,7 @@ class MyWidget extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: GetStarted(), // Set the initial route to HomePage
+      home: const GetStarted(), // Set the initial route to HomePage
     );
   }
 }

@@ -35,7 +35,7 @@ class GetStarted extends StatelessWidget {
                           color: Colors.white,
                           fontFamily: 'Poppins',
                           fontSize: 24,
-                          fontWeight: FontWeight.normal,
+                          fontWeight: FontWeight.bold,
                           height: 1,
                         ),
                       ),
@@ -51,7 +51,7 @@ class GetStarted extends StatelessWidget {
                               color: Colors.white,
                               fontFamily: 'Poppins',
                               fontSize: 24,
-                              fontWeight: FontWeight.normal,
+                              fontWeight: FontWeight.bold,
                               height: 1,
                             ),
                           ),
@@ -68,25 +68,24 @@ class GetStarted extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 70), // Space between text and button
+                const SizedBox(height: 70),
                 FractionallySizedBox(
                     widthFactor: 0.85,
                     child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white, // Background color
-                          foregroundColor: Colors.black, // Text color
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 24, vertical: 12),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(20), // Rounded corners
+                            borderRadius: BorderRadius.circular(20),
                           ),
                         ),
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => Tutorial1()),
+                                builder: (context) => const Tutorial1()),
                           );
                         },
                         child: const Text(
