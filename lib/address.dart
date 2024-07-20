@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/addressedit.dart';
+import 'package:flutter_application_1/address_page.dart';
+import 'package:flutter_application_1/services/database.dart';
+import 'package:flutter_application_1/widgets/loading.dart'; // Import your DatabaseService
 
 class MyAddressPage extends StatefulWidget {
   @override
@@ -7,34 +9,8 @@ class MyAddressPage extends StatefulWidget {
 }
 
 class _MyAddressPageState extends State<MyAddressPage> {
-  List<Map<String, String>> addresses = [
-    {
-      'type': 'HOME',
-      'address': 'India',
-      'icon': 'home',
-    },
-    {
-      'type': 'WORK',
-      'address': 'MG ROAD',
-      'icon': 'work',
-    },
-  ];
-
-  void _addNewAddress() {
-    setState(() {
-      addresses.add({
-        'type': 'NEW ADDRESS',
-        'address': 'New Address Details',
-        'icon': 'location_on',
-      });
-    });
-  }
-
-  void _deleteAddress(int index) {
-    setState(() {
-      addresses.removeAt(index);
-    });
-  }
+  final DatabaseService _dbService =
+      DatabaseService(); // Initialize DatabaseService instance
 
   @override
   Widget build(BuildContext context) {
@@ -60,54 +36,71 @@ class _MyAddressPageState extends State<MyAddressPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                itemCount: addresses.length,
-                itemBuilder: (context, index) {
-                  var address = addresses[index];
-                  return _buildAddressCard(
-                    icon: address['icon'] == 'home' ? Icons.home : Icons.work,
-                    iconColor:
-                        address['icon'] == 'home' ? Colors.blue : Colors.purple,
-                    title: address['type']!,
-                    subtitle: address['address']!,
-                    onDelete: () => _deleteAddress(index),
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFD19A73),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+        child: StreamBuilder<Map<String, dynamic>?>(
+          stream:
+              _dbService.fetchUserProfile('Hwk6nxoDNb58y9W6ek7w').asStream(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: Loading());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            } else {
+              var userData =
+                  snapshot.data ?? {}; // Get user data or empty map if null
+              List<Map<String, dynamic>> addresses =
+                  List<Map<String, dynamic>>.from(
+                userData['addresses'] ?? [], // Get addresses from user data
+              );
+
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: addresses.length,
+                      itemBuilder: (context, index) {
+                        var address = addresses[index];
+                        return _buildAddressCard(
+                          icon: address['type'] == 'Home'
+                              ? Icons.home
+                              : Icons.work,
+                          iconColor: address['type'] == 'Home'
+                              ? Colors.blue
+                              : Colors.purple,
+                          title: address['type']!,
+                          subtitle: address['address']!,
+                          onDelete: () => _deleteAddress(index),
+                        );
+                      },
                     ),
                   ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => AddAddressPage()),
-                    );
-                  },
-                  child: Text(
-                    'ADD NEW ADDRESS',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      color: Colors.white,
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFFD19A73),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: _addNewAddress,
+                        child: Text(
+                          'ADD NEW ADDRESS',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
-          ],
+                ],
+              );
+            }
+          },
         ),
       ),
     );
@@ -146,23 +139,26 @@ class _MyAddressPageState extends State<MyAddressPage> {
                 ),
               ),
               SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 14,
-                  color: Colors.black54,
+              Container(
+                width: 190,
+                child: Text.rich(
+                  TextSpan(
+                    text: subtitle ?? '',
+                    style: TextStyle(
+                      color: Color.fromRGBO(103, 103, 103, 1),
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      height: 1,
+                    ),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
           ),
           Spacer(),
-          IconButton(
-            icon: Icon(Icons.edit, color: Colors.black54),
-            onPressed: () {
-              // Handle edit button press
-            },
-          ),
           IconButton(
             icon: Icon(Icons.delete, color: Colors.black54),
             onPressed: onDelete,
@@ -170,5 +166,60 @@ class _MyAddressPageState extends State<MyAddressPage> {
         ],
       ),
     );
+  }
+
+  void _addNewAddress() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AddAddressPage()),
+    );
+  }
+
+  void _deleteAddress(int index) async {
+    var userId = 'Hwk6nxoDNb58y9W6ek7w'; // Replace with actual user ID
+
+    try {
+      var userData = await _dbService.fetchUserProfile(userId);
+      if (userData != null) {
+        var addresses =
+            List<Map<String, dynamic>>.from(userData['addresses'] ?? []);
+
+        if (addresses.length > index) {
+          addresses.removeAt(index); // Remove address at specified index
+
+          // Update user data in Firestore
+          await _dbService.updateUserData(userId, addresses: addresses);
+
+          // Show a success message or update the UI
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Address deleted successfully'),
+            duration: Duration(seconds: 2),
+          ));
+
+          // Trigger a redraw by calling setState
+          setState(() {
+            // Update the addresses list in the state
+            addresses =
+                List<Map<String, dynamic>>.from(userData['addresses'] ?? []);
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Address index out of bounds'),
+            duration: Duration(seconds: 2),
+          ));
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('User data not found'),
+          duration: Duration(seconds: 2),
+        ));
+      }
+    } catch (e) {
+      print('Error deleting address: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error deleting address: $e'),
+        duration: Duration(seconds: 2),
+      ));
+    }
   }
 }

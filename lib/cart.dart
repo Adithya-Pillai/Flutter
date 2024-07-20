@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_application_1/payment1.dart';
 import 'package:get/get.dart';
 
 void main() {
@@ -92,7 +93,7 @@ class _FoodOrderPageState extends State<FoodOrderPage> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(
-            Icons.arrow_back_ios,
+            Icons.arrow_back,
             color: Color(0xFF3a3737),
           ),
           onPressed: () => Navigator.of(context).pop(),
@@ -205,43 +206,52 @@ class PaymentMethodWidget extends StatelessWidget {
           offset: Offset(0, 1),
         ),
       ]),
-      child: Card(
-        color: Colors.white,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: const BorderRadius.all(
-            Radius.circular(5.0),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const Androidlarge21Widget()),
+          );
+        },
+        child: Card(
+          color: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.all(
+              Radius.circular(5.0),
+            ),
           ),
-        ),
-        child: Container(
-          alignment: Alignment.center,
-          padding: EdgeInsets.only(
-              left: screenWidth * 0.01,
-              right: screenWidth * 0.03,
-              top: screenWidth * 0.01,
-              bottom: screenWidth * 0.01),
-          child: Row(
-            children: <Widget>[
-              Container(
-                alignment: Alignment.center,
-                child: Image.asset(
-                  "assets/images/Home/idli.png",
-                  width: screenWidth * 0.12,
-                  height: screenWidth * 0.12,
+          child: Container(
+            alignment: Alignment.center,
+            padding: EdgeInsets.only(
+                left: screenWidth * 0.01,
+                right: screenWidth * 0.03,
+                top: screenWidth * 0.01,
+                bottom: screenWidth * 0.01),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  alignment: Alignment.center,
+                  child: Image.asset(
+                    "assets/images/Home/idli.png",
+                    width: screenWidth * 0.12,
+                    height: screenWidth * 0.12,
+                  ),
                 ),
-              ),
-              SizedBox(width: screenWidth * 0.02),
-              Text(
-                "Credit/Debit Card",
-                style: TextStyle(
-                  fontSize: screenWidth * 0.04,
-                  color: Color(0xFF3a3a3b),
-                  fontWeight: FontWeight.w400,
-                  fontFamily: 'Poppins', // Set font family
+                SizedBox(width: screenWidth * 0.02),
+                Text(
+                  "Credit/Debit Card",
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.04,
+                    color: Color(0xFF3a3a3b),
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Poppins', // Set font family
+                  ),
+                  textAlign: TextAlign.left,
                 ),
-                textAlign: TextAlign.left,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
