@@ -12,6 +12,15 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.6
   flutter_svg: ^2.0.10+1
+  flutter_rating_bar: ^4.0.0
+  get:
+  google_maps_flutter: ^2.7.0
+  geocoding: ^3.0.0
+  firebase_core: ^3.2.0
+  cloud_firestore: ^5.1.0
+  flutter_spinkit: ^5.2.1
+  location: ^7.0.0
+  geolocator: ^12.0.0
 
 dev_dependencies:
   flutter_test:
@@ -41,5 +50,61 @@ flutter:
     - assets/images/Tutorials/Tutorial_1_2.png
     - assets/images/Tutorials/Tutorial_3.png
     - assets/images/Tutorials/Tutorial_1_3.png
+    - assets/images/Home/idli.png
+    - assets/images/Home/meals.png
+    - assets/images/Home/sweets.png
+    - assets/images/Home/sharath.png
+    - assets/images/Home/vector1.png
+    - assets/images/Home/Image2186.png
+    - assets/images/Home/Image2185.png
+    - assets/images/Home/Image2184.png
+    - assets/images/Chat/Image2187.png
+    - assets/images/Chat/chat1.png
+    - assets/images/Chat/chat2.png
+    - assets/images/Chat/chat3.png
+    - assets/images/Chat/chat4.png
+    - assets/images/Profile/Chechi.png
+    - assets/images/location/accloc.png
+    - assets/images/location/rectangle1344.svg
+    - assets/images/payment1/currency_rupee.svg
+    - assets/images/payment1/rectangle4180.svg
+    - assets/images/payment1/visa.png
+    - assets/images/payment1/upi.png
+    - assets/images/payment1/cash.png
+    - assets/images/payment1/rupee.png
+    - assets/images/loginas/chef.png    
+    - assets/images/loginas/customer.png
+    - assets/images/location/arrow.png
+    - assets/images/review/biryani.png
+    - assets/images/chflgn/Image2183.png
+    - assets/images/chflgn/vector.svg
+    - assets/images/login/Image2183.png
+    - assets/images/otp/foood.png
+    - assets/images/otp/31148832.png
+    - assets/images/icons/salt.png
+    - assets/images/icons/chicken.png
+    - assets/images/icons/onion.png
+    - assets/images/icons/garlic.png
+    - assets/images/icons/peppers.png
+    - assets/images/icons/ginger.png
+    - assets/images/icons/avocado.png
+    - assets/images/icons/apple.png
+    - assets/images/icons/blueberry.png
+    - assets/images/icons/broccoli.png
+    - assets/images/icons/orange.png
+    - assets/images/icons/walnut.png
+    - assets/images/icons/food.jpg
+    - assets/images/restr/chef.jpg
+    - assets/images/restr/dum_biryani.jpg
+    - assets/images/restr/hyderabadi_biryani.jpg
+    - assets/images/signup/rectangle1575.svg
+    - assets/images/signup/Freecookingfoodillustrationfreedownloadfooddrinkillustrationsiconscout1.png  
+    - assets/images/signup/31148832.png
+    - assets/images/Home/Samosa.jpg
+    - assets/images/Home/Lassi.jpg
+    - assets/images/Home/paneer.jpg
+    - assets/images/foodlist/chickbir.png
+    - assets/images/foodlist/idly.png
+    - assets/images/foodlist/p1.png
     
     
