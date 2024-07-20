@@ -1,0 +1,68 @@
+name: flutter_application_1
+description: "A new Flutter project."
+publish_to: 'none' 
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  flutter_svg: ^2.0.5
+  material: ^1.0.0+2
+
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins/Poppins-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Poppins/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Poppins/Poppins-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/Poppins/Poppins-Medium.ttf
+          weight: 600
+
+  assets:
+    - assets/images/Get_started/get_started.png
+    - assets/images/Get_started/get.png
+    - assets/images/Tutorials/Tutorial_1.png
+    - assets/images/Tutorials/Tutorial_1_1.png
+    - assets/images/Tutorials/Tutorial_2.png
+    - assets/images/Tutorials/Tutorial_1_2.png
+    - assets/images/Tutorials/Tutorial_3.png
+    - assets/images/Tutorials/Tutorial_1_3.png
+    - assets/images/Image2183.png
+    - assets/images/rectangle1344.svg
+    - assets/images/rectangle13441.svg
+    - assets/images/rectangle13442.svg
+    - assets/images/vector142.svg
+    - assets/images/vector.svg
+    - assets/images/vector1.svg
+    - assets/images/vector2.svg
+    - assets/images/vector3.svg
+    - assets/images/vector4.svg
+    - assets/images/Freecookingfoodillustrationfreedownloadfooddrinkillustrationsiconscout1.png
+    - assets/images/31148832.png
+    - assets/images/rectangle1575.svg
+    - assets/images/rectangle1345.svg
+    - assets/images/burger.png
+    - assets/images/Image2183.png
+    - assets/images/biriyani2.png
+    - assets/images/biriyani.png
+    
+    
+
+    
