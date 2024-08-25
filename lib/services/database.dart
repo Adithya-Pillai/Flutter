@@ -1,8 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_application_1/models/kitchen.dart';
+import 'package:flutter_application_1/widgets/foodcard.dart';
+import 'package:flutter_application_1/widgets/kitchenorders.dart';
 import 'package:flutter_application_1/widgets/orders.dart';
 import 'package:flutter_application_1/models/category.dart';
+import 'package:intl/intl.dart';
 
 class DatabaseService {
   final CollectionReference usersCollection =
@@ -18,41 +22,6 @@ class DatabaseService {
   }
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  Future<List<Map<String, dynamic>>> fetchCategoryDishes(
-      String category) async {
-    try {
-      QuerySnapshot kitchensSnapshot =
-          await _firestore.collection('kitchens').get();
-      List<Map<String, dynamic>> allItems = [];
-
-      for (var kitchen in kitchensSnapshot.docs) {
-        QuerySnapshot itemsSnapshot = await _firestore
-            .collection('kitchens')
-            .doc(kitchen.id)
-            .collection('items')
-            .where('category_id', isEqualTo: category)
-            .get();
-
-        var items = itemsSnapshot.docs.map((doc) {
-          var data = doc.data() as Map<String, dynamic>;
-          data['kitchen_id'] = kitchen.id; // Optionally, include kitchen ID
-          return data;
-        }).toList();
-
-        // Debug log for fetched items
-        debugPrint('Kitchen ID: ${kitchen.id}, Items: $items');
-
-        allItems.addAll(items);
-      }
-
-      debugPrint('All Items: $allItems');
-      return allItems;
-    } catch (e) {
-      debugPrint('Error fetching category dishes: $e');
-      rethrow;
-    }
-  }
 
   Future<DocumentSnapshot> getUserData(String uid) async {
     return await usersCollection.doc(uid).get();
@@ -105,9 +74,206 @@ class DatabaseService {
     }
   }
 
-  Future<String> fetchAddress(String userId, String addressType) async {
+  Future<List<KitchenOrderCard>> getOrdersForKitchen(
+      String kitchenId, String type) async {
+    if (type == 'Ongoing') {
+      try {
+        // Get the kitchen document reference
+        DocumentReference kitchenDocRef = kitchensCollection.doc(kitchenId);
+
+        // Get the snapshot of the kitchen document
+        DocumentSnapshot kitchenSnapshot = await kitchenDocRef.get();
+
+        // Extract the ongoing orders list from the kitchen document
+        List<Map<String, dynamic>> ongoingOrders =
+            List<Map<String, dynamic>>.from(
+                kitchenSnapshot['ongoing_orders'] ?? []);
+
+        // Extract items list from the kitchen document
+        List<Map<String, dynamic>> kitchenItems =
+            List<Map<String, dynamic>>.from(kitchenSnapshot['items'] ?? []);
+
+        // Create a map for quick item lookup
+        Map<String, Map<String, dynamic>> itemMap = {
+          for (var item in kitchenItems) item['name']: item
+        };
+
+        // Map each ongoing order to a KitchenOrderCard instance
+        List<KitchenOrderCard> orderCards = ongoingOrders.map((order) {
+          List<String> itemDetails = [];
+          List<Map<String, dynamic>> items =
+              List<Map<String, dynamic>>.from(order['items'] ?? []);
+
+          items.forEach((item) {
+            final itemName = item['item_name'];
+            final quantity = item['quantity'];
+            if (itemName != null && quantity != null) {
+              final kitchenItem = itemMap[itemName];
+              final itemDescription =
+                  kitchenItem?['description'] ?? 'No description';
+              itemDetails.add('$itemName ($quantity) - $itemDescription');
+            }
+          });
+
+          // Format timestamp to display date
+          DateTime date = DateTime.parse(order['date']);
+
+          return KitchenOrderCard(
+            imageUrl: order['imageUrl'] ?? '',
+            name: order['customer_name'] ?? '',
+            price: order['price'] ?? '',
+            items: itemDetails.join(', '),
+            orderId: order['order_id'] ?? '',
+            button1Text: order['button1Text'] ?? '',
+            button2Text: order['button2Text'] ?? '',
+            date: '${date.day}/${date.month}/${date.year}',
+            uid: kitchenId, // Kitchen ID used as UID
+          );
+        }).toList();
+
+        return orderCards;
+      } catch (e) {
+        print('Error getting ongoing orders: $e');
+        return [];
+      }
+    } else {
+      try {
+        // Get the kitchen document reference
+        DocumentReference kitchenDocRef = kitchensCollection.doc(kitchenId);
+
+        // Get the snapshot of the kitchen document
+        DocumentSnapshot kitchenSnapshot = await kitchenDocRef.get();
+
+        // Extract the ongoing orders list from the kitchen document
+        List<Map<String, dynamic>> ongoingOrders =
+            List<Map<String, dynamic>>.from(
+                kitchenSnapshot['order_history'] ?? []);
+
+        // Extract items list from the kitchen document
+        List<Map<String, dynamic>> kitchenItems =
+            List<Map<String, dynamic>>.from(kitchenSnapshot['items'] ?? []);
+
+        // Create a map for quick item lookup
+        Map<String, Map<String, dynamic>> itemMap = {
+          for (var item in kitchenItems) item['name']: item
+        };
+
+        // Map each ongoing order to a KitchenOrderCard instance
+        List<KitchenOrderCard> orderCards = ongoingOrders.map((order) {
+          List<String> itemDetails = [];
+          List<Map<String, dynamic>> items =
+              List<Map<String, dynamic>>.from(order['items'] ?? []);
+
+          items.forEach((item) {
+            final itemName = item['item_name'];
+            final quantity = item['quantity'];
+            if (itemName != null && quantity != null) {
+              final kitchenItem = itemMap[itemName];
+              final itemDescription =
+                  kitchenItem?['description'] ?? 'No description';
+              itemDetails.add('$itemName ($quantity) - $itemDescription');
+            }
+          });
+
+          // Format timestamp to display date
+          DateTime date = DateTime.parse(order['date']);
+
+          return KitchenOrderCard(
+            imageUrl: order['imageUrl'] ?? '',
+            name: order['customer_name'] ?? '',
+            price: order['price'] ?? '',
+            items: itemDetails.join(', '),
+            orderId: order['order_id'] ?? '',
+            button1Text: order['button1Text'] ?? '',
+            button2Text: order['button2Text'] ?? '',
+            date: '${date.day}/${date.month}/${date.year}',
+            uid: kitchenId, // Kitchen ID used as UID
+          );
+        }).toList();
+
+        return orderCards;
+      } catch (e) {
+        print('Error getting history orders: $e');
+        return [];
+      }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getFoodList(
+      String kitchenId, Function(String) onDelete) async {
     try {
-      DocumentSnapshot userSnapshot = await usersCollection.doc(userId).get();
+      // Fetch the specific kitchen document
+      DocumentSnapshot kitchenDoc = await FirebaseFirestore.instance
+          .collection('kitchens')
+          .doc(kitchenId)
+          .get();
+
+      if (!kitchenDoc.exists) {
+        print('Kitchen document not found');
+        return [];
+      }
+
+      // Get the items list from the kitchen document
+      List items = kitchenDoc['items'] ?? [];
+
+      // Map each item to a Map containing necessary data for FoodCard
+      List<Map<String, dynamic>> foodItems = items.map((item) {
+        return {
+          'imageUrl': item['image_item'] ?? '',
+          'name': item['name'] ?? '',
+          'price': item['price']?.toString() ?? 'N/A',
+          'description': item['description'] ?? '',
+          'quantity': item['quantity']?.toString() ?? '0',
+          'documentId': item['item_id'] ?? '',
+        };
+      }).toList();
+
+      return foodItems;
+    } catch (e) {
+      print('Error getting food list: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, int>> fetchordersCount(String id) async {
+    try {
+      // Get the kitchen document reference
+      DocumentReference kitchenDocRef = kitchensCollection.doc(id);
+
+      // Get the snapshot of the kitchen document
+      DocumentSnapshot kitchenSnapshot = await kitchenDocRef.get();
+
+      // Check if the document exists
+      if (!kitchenSnapshot.exists) {
+        print('Kitchen document does not exist');
+        return {
+          'ongoingOrdersCount': 0,
+          'orderHistoryCount': 0,
+        };
+      }
+
+      // Extract the ongoing orders list from the kitchen document
+      List<dynamic> ongoingOrders = kitchenSnapshot.get('ongoing_orders') ?? [];
+      List<dynamic> historyOrders = kitchenSnapshot.get('order_history') ?? [];
+
+      // Return the counts of ongoing orders and order history
+      return {
+        'ongoingOrdersCount': ongoingOrders.length,
+        'orderHistoryCount': historyOrders.length,
+      };
+    } catch (e) {
+      print('Error getting orders count: $e');
+      return {
+        'ongoingOrdersCount': 0,
+        'orderHistoryCount': 0,
+      };
+    }
+  }
+
+  Future<String> fetchAddress(String Id, String addressType) async {
+    try {
+      DocumentSnapshot userSnapshot = await usersCollection.doc(Id).get();
+      DocumentSnapshot kitchenSnapshot = await kitchensCollection.doc(Id).get();
       if (userSnapshot.exists) {
         List<dynamic> addresses = userSnapshot['addresses'] ?? [];
         Map<String, dynamic>? address = addresses.firstWhere(
@@ -120,8 +286,10 @@ class DatabaseService {
         } else {
           return 'Address type $addressType not found';
         }
+      } else if (kitchenSnapshot.exists) {
+        return kitchenSnapshot['address'] ?? 'Address not found';
       } else {
-        return 'User document does not exist';
+        return 'Document does not exist';
       }
     } catch (e) {
       print('Error fetching address: $e');
@@ -144,6 +312,74 @@ class DatabaseService {
     }
   }
 
+  Future<String> fetchImageurluser(String userId) async {
+    try {
+      DocumentSnapshot userSnapshot = await usersCollection.doc(userId).get();
+      if (userSnapshot.exists) {
+        return userSnapshot['avatarurl'] ??
+            'https://firebasestorage.googleapis.com/v0/b/homely-project-8be33.appspot.com/o/placeholder_images%2Fhomely_logo.jpeg?alt=media&token=9089f046-ad45-48c3-8ad6-b3f30c3ee7a5';
+      } else {
+        return 'User document does not exist';
+      }
+    } catch (e) {
+      print('Error fetching user image: $e');
+      return 'https://firebasestorage.googleapis.com/v0/b/homely-project-8be33.appspot.com/o/placeholder_images%2Fhomely_logo.jpeg?alt=media&token=9089f046-ad45-48c3-8ad6-b3f30c3ee7a5';
+    }
+  }
+
+  Future<String> fetchKitchenName(String kitchenId) async {
+    try {
+      DocumentSnapshot kitchenSnapshot =
+          await kitchensCollection.doc(kitchenId).get();
+
+      if (kitchenSnapshot.exists) {
+        return kitchenSnapshot['name'] ?? 'Name not found';
+      } else {
+        return 'Kitchen document does not exist';
+      }
+    } catch (e) {
+      print('Error fetching kitchen name: $e');
+      return 'Error fetching kitchen name';
+    }
+  }
+
+  Future<String> fetchImageurlkitchen(String kitchenId) async {
+    try {
+      DocumentSnapshot kitchenSnapshot =
+          await kitchensCollection.doc(kitchenId).get();
+
+      if (kitchenSnapshot.exists) {
+        return kitchenSnapshot['kitchenimage'] ??
+            'https://firebasestorage.googleapis.com/v0/b/homely-project-8be33.appspot.com/o/placeholder_images%2Fhomely_logo.jpeg?alt=media&token=9089f046-ad45-48c3-8ad6-b3f30c3ee7a5';
+      } else {
+        return 'Kitchen document does not exist';
+      }
+    } catch (e) {
+      print('Error fetching kitchen image: $e');
+      return 'https://firebasestorage.googleapis.com/v0/b/homely-project-8be33.appspot.com/o/placeholder_images%2Fhomely_logo.jpeg?alt=media&token=9089f046-ad45-48c3-8ad6-b3f30c3ee7a5';
+    }
+  }
+
+  Future<String> fetchKitchenIdByName(String kitchenName) async {
+    try {
+      QuerySnapshot querySnapshot = await kitchensCollection
+          .where('name', isEqualTo: kitchenName)
+          .limit(1) // Assuming kitchen names are unique, limiting to one result
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        DocumentSnapshot kitchenSnapshot = querySnapshot.docs.first;
+        return kitchenSnapshot
+            .id; // Returns the document ID, which is the kitchen ID
+      } else {
+        return 'Kitchen not found';
+      }
+    } catch (e) {
+      print('Error fetching kitchen ID: $e');
+      return 'Error fetching kitchen ID';
+    }
+  }
+
   Future<Map<String, dynamic>?> fetchUserProfile(String userId) async {
     try {
       DocumentSnapshot userSnapshot = await usersCollection.doc(userId).get();
@@ -156,6 +392,23 @@ class DatabaseService {
       }
     } catch (e) {
       print('Error fetching user profile: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchKitchenProfile(String kitchenId) async {
+    try {
+      DocumentSnapshot kitchenSnapshot =
+          await kitchensCollection.doc(kitchenId).get();
+      if (kitchenSnapshot.exists) {
+        return kitchenSnapshot.data()
+            as Map<String, dynamic>?; // Return kitchen data as a Map
+      } else {
+        print('Kitchen document for ID $kitchenId does not exist.');
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching kitchen profile: $e');
       return null;
     }
   }
@@ -207,6 +460,26 @@ class DatabaseService {
     }
   }
 
+  Future<String> fetchUserIdByName(String username) async {
+    try {
+      QuerySnapshot querySnapshot = await usersCollection
+          .where('name', isEqualTo: username)
+          .limit(1) // Assuming kitchen names are unique, limiting to one result
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        DocumentSnapshot userSnapshot = querySnapshot.docs.first;
+        return userSnapshot
+            .id; // Returns the document ID, which is the kitchen ID
+      } else {
+        return 'User not found';
+      }
+    } catch (e) {
+      print('Error fetching User ID: $e');
+      return 'Error fetching User ID';
+    }
+  }
+
   Future<void> deleteOngoingOrder(String userId, String orderId) async {
     try {
       // Reference to the user document
@@ -230,6 +503,262 @@ class DatabaseService {
     } catch (e) {
       print('Error deleting order: $e');
       throw e; // Propagate the error for handling elsewhere
+    }
+  }
+
+  Future<void> deleteOngoingOrderKitchen(
+      String kitchenId, String orderId) async {
+    try {
+      DocumentReference kitchenDocRef =
+          FirebaseFirestore.instance.collection('kitchens').doc(kitchenId);
+
+      // Fetch the kitchen document snapshot
+      DocumentSnapshot kitchenSnapshot = await kitchenDocRef.get();
+      if (!kitchenSnapshot.exists) {
+        throw Exception("Kitchen does not exist");
+      }
+
+      // Get the ongoing orders and items from the kitchen snapshot
+      List<dynamic> ongoingOrders =
+          List<dynamic>.from(kitchenSnapshot['ongoing_orders'] ?? []);
+      List<dynamic> kitchenItems =
+          List<dynamic>.from(kitchenSnapshot['items'] ?? []);
+
+      // Find the order to delete
+      Map<String, dynamic>? orderToDelete;
+      for (var order in ongoingOrders) {
+        if (order['order_id'] == orderId) {
+          orderToDelete = order;
+          break;
+        }
+      }
+
+      if (orderToDelete == null) {
+        print('Order $orderId not found');
+        return;
+      }
+
+      // Remove the order from ongoing_orders
+      ongoingOrders.removeWhere((order) => order['order_id'] == orderId);
+
+      // Update item quantities in the kitchen's items
+      for (var item in orderToDelete['items']) {
+        String itemName = item['item_name'];
+        int itemQuantity = item['quantity'];
+
+        // Find the item in kitchenItems and update its quantity
+        for (var kitchenItem in kitchenItems) {
+          if (kitchenItem['name'] == itemName) {
+            kitchenItem['quantity'] += itemQuantity;
+            break;
+          }
+        }
+      }
+
+      // Update the kitchen document with the modified orders and items
+      await kitchenDocRef.update({
+        'ongoing_orders': ongoingOrders,
+        'items': kitchenItems,
+      });
+
+      print('Order $orderId deleted successfully and item quantities updated');
+    } catch (e) {
+      print('Error deleting order: $e');
+      throw e; // Propagate the error for handling elsewhere
+    }
+  }
+
+  Future<void> moveOrderToHistory(
+      String kitchenId, String orderId, String userId) async {
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    try {
+      print(
+          'Searching for order with orderId: $orderId in kitchen: $kitchenId and user: $userId');
+
+      // Reference to the kitchens and users collection
+      DocumentReference kitchenDocRef =
+          firestore.collection('kitchens').doc(kitchenId);
+      DocumentReference userDocRef = firestore.collection('users').doc(userId);
+
+      // Get the kitchen document snapshot
+      DocumentSnapshot kitchenSnapshot = await kitchenDocRef.get();
+      // Get the user document snapshot
+      DocumentSnapshot userSnapshot = await userDocRef.get();
+
+      if (kitchenSnapshot.exists &&
+          kitchenSnapshot['ongoing_orders'] != null &&
+          userSnapshot.exists &&
+          userSnapshot['ongoing_orders'] != null) {
+        // Retrieve the list of ongoing orders from kitchen and user
+        List<dynamic> kitchenOngoingOrders = kitchenSnapshot['ongoing_orders'];
+        List<dynamic> userOngoingOrders = userSnapshot['ongoing_orders'];
+
+        Map<String, dynamic>? kitchenOrderData;
+        Map<String, dynamic>? userOrderData;
+
+        // Find the order in kitchen's ongoing orders
+        for (var order in kitchenOngoingOrders) {
+          if (order['order_id'] == orderId) {
+            kitchenOrderData = Map<String, dynamic>.from(order);
+            break;
+          }
+        }
+
+        // Find the order in user's ongoing orders
+        for (var order in userOngoingOrders) {
+          if (order['order_id'] == orderId) {
+            userOrderData = Map<String, dynamic>.from(order);
+            break;
+          }
+        }
+
+        if (kitchenOrderData != null && userOrderData != null) {
+          print('Order data found in both kitchen and user ongoing orders');
+
+          // Update the order status to 'finished'
+          kitchenOrderData['status'] = 'finished';
+          kitchenOrderData['button1Text'] = 'Message';
+          kitchenOrderData['button2Text'] = 'Bill';
+          userOrderData['status'] = 'finished';
+          userOrderData['button1Text'] = 'Rate';
+          userOrderData['button2Text'] = 'Re-order';
+
+          // Add the order to the order_history collection in the kitchen and user documents
+          List<dynamic> kitchenOrderHistory =
+              List<dynamic>.from(kitchenSnapshot['order_history'] ?? []);
+          kitchenOrderHistory.add(kitchenOrderData);
+
+          List<dynamic> userOrderHistory =
+              List<dynamic>.from(userSnapshot['order_history'] ?? []);
+          userOrderHistory.add(userOrderData);
+
+          // Remove the order from ongoing_orders in both kitchen and user
+          kitchenOngoingOrders
+              .removeWhere((order) => order['order_id'] == orderId);
+          userOngoingOrders
+              .removeWhere((order) => order['order_id'] == orderId);
+
+          // Update Firestore with the modified ongoing_orders and order_history lists for both kitchen and user
+          await kitchenDocRef.update({
+            'ongoing_orders': kitchenOngoingOrders,
+            'order_history': kitchenOrderHistory,
+          });
+
+          await userDocRef.update({
+            'ongoing_orders': userOngoingOrders,
+            'order_history': userOrderHistory,
+          });
+
+          print(
+              'Order moved to history successfully for both kitchen and user');
+        } else {
+          print('Order not found in either kitchen or user ongoing orders');
+        }
+      } else {
+        print(
+            'Kitchen or user document does not exist or no ongoing orders found');
+      }
+    } catch (e) {
+      print('Error moving order to history: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchCategoryDishes(
+      String category) async {
+    try {
+      // Fetch all kitchen documents
+      QuerySnapshot querySnapshot =
+          await _firestore.collection('kitchens').get();
+
+      List<Map<String, dynamic>> dishes = [];
+
+      // Iterate over each kitchen document
+      for (var doc in querySnapshot.docs) {
+        // Get the kitchen ID
+        String kitchenId = doc.id;
+        // Get the items array from the document
+        List items = doc['items'];
+
+        // Filter items based on category_id and include kitchen_id
+        for (var item in items) {
+          if (item['category_id'] == category) {
+            // Add kitchen_id to each dish's data
+            item['kitchen_id'] = kitchenId;
+            dishes.add(item);
+          }
+        }
+      }
+
+      print(dishes); // For debugging purposes
+      return dishes;
+    } catch (e) {
+      print('Error fetching category dishes: $e');
+      return [];
+    }
+  }
+
+  Future<List<FlSpot>> fetchRevenueData(String kitchenId) async {
+    try {
+      DocumentReference kitchenDocRef =
+          FirebaseFirestore.instance.collection('kitchens').doc(kitchenId);
+      DocumentSnapshot kitchenSnapshot = await kitchenDocRef.get();
+
+      List<Map<String, dynamic>> orderHistory = List<Map<String, dynamic>>.from(
+          kitchenSnapshot['order_history'] ?? []);
+
+      // Get the current month start and end dates
+      DateTime now = DateTime.now();
+      DateTime startOfMonth = DateTime(now.year, now.month, 1);
+      DateTime endOfMonth = DateTime(now.year, now.month + 1, 0);
+
+      // Map to hold revenue sums for each day of the current month
+      Map<int, double> dailyRevenue = {};
+
+      for (var order in orderHistory) {
+        DateTime date = DateTime.parse(order['date']);
+        if (date.isAfter(startOfMonth.subtract(Duration(days: 1))) &&
+            date.isBefore(endOfMonth.add(Duration(days: 1)))) {
+          int dayOfMonth = date.day;
+          double revenue = double.parse(order['price']);
+
+          // Accumulate revenue for each day
+          if (dailyRevenue.containsKey(dayOfMonth)) {
+            dailyRevenue[dayOfMonth] = dailyRevenue[dayOfMonth]! + revenue;
+          } else {
+            dailyRevenue[dayOfMonth] = revenue;
+          }
+        }
+      }
+
+      // Convert daily revenue to FlSpot list
+      List<FlSpot> spots = [];
+      dailyRevenue.forEach((day, revenue) {
+        double x = day.toDouble(); // Use day of the month as x value
+        double y = revenue;
+        spots.add(FlSpot(x, y));
+      });
+
+      // Sort spots by day (x-axis)
+      spots.sort((a, b) => a.x.compareTo(b.x));
+
+      return spots;
+    } catch (e) {
+      print('Error fetching revenue data: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchKitchenData(String kitchenId) async {
+    try {
+      DocumentSnapshot kitchenSnapshot = await FirebaseFirestore.instance
+          .collection('kitchens')
+          .doc(kitchenId)
+          .get();
+      return kitchenSnapshot.data() as Map<String, dynamic>;
+    } catch (e) {
+      print('Error fetching kitchen data: $e');
+      return {};
     }
   }
 

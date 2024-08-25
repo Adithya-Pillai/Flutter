@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_application_1/address.dart';
 import 'package:flutter_application_1/chef_orderchat.dart';
 import 'package:flutter_application_1/foodlist.dart';
 import 'package:flutter_application_1/info.dart';
+import 'package:flutter_application_1/loginas.dart';
+import 'package:flutter_application_1/services/database.dart';
+import 'package:flutter_application_1/widgets/loading.dart';
+import 'package:flutter_application_1/widgets/revenuechart.dart';
 
 class ChefHomeScreen extends StatefulWidget {
   const ChefHomeScreen({Key? key}) : super(key: key);
+
+  // Define kitchenId here if needed, or pass it via constructor if it's dynamic
+  final String kitchenId = 'abc'; // Example static kitchenId
 
   @override
   _ChefHomeScreenState createState() => _ChefHomeScreenState();
@@ -12,45 +21,52 @@ class ChefHomeScreen extends StatefulWidget {
 
 class _ChefHomeScreenState extends State<ChefHomeScreen> {
   int _selectedIndex = 0;
+  late String kitchenId;
 
-  static final List<Widget> _widgetOptions = <Widget>[
-    HomePage(),
-    ChatPage(),
-    OrdersPage(),
-    ProfilePage(),
-  ];
-
-  final List<PreferredSizeWidget> _appBars = [
-    AppBar(
-      automaticallyImplyLeading: false,
-      flexibleSpace: TopWidgetHome(),
-      backgroundColor: Color.fromRGBO(238, 221, 198, 1),
-    ),
-    AppBar(
-      automaticallyImplyLeading: false,
-      flexibleSpace: TopWidgetChat(),
-      backgroundColor: Color.fromRGBO(238, 221, 198, 1),
-    ),
-    AppBar(
-      automaticallyImplyLeading: false,
-      flexibleSpace: TopWidgetOrders(),
-      backgroundColor: Color.fromRGBO(238, 221, 198, 1),
-    ),
-    AppBar(
-      automaticallyImplyLeading: false,
-      flexibleSpace: TopWidgetProfile(),
-      backgroundColor: Color.fromRGBO(238, 221, 198, 1),
-    ),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  @override
+  void initState() {
+    super.initState();
+    kitchenId = widget.kitchenId; // Initialize kitchenId here
   }
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> _widgetOptions = <Widget>[
+      HomePage(kitchenId: kitchenId),
+      ChatPage(),
+      OrdersPage(kitchenId: kitchenId),
+      ProfilePage(kitchenId: kitchenId),
+    ];
+
+    final List<PreferredSizeWidget> _appBars = [
+      AppBar(
+        automaticallyImplyLeading: false,
+        flexibleSpace: TopWidgetHome(kitchenId: kitchenId),
+        backgroundColor: Color.fromRGBO(238, 221, 198, 1),
+      ),
+      AppBar(
+        automaticallyImplyLeading: false,
+        flexibleSpace: TopWidgetChat(),
+        backgroundColor: Color.fromRGBO(238, 221, 198, 1),
+      ),
+      AppBar(
+        automaticallyImplyLeading: false,
+        flexibleSpace: TopWidgetOrders(),
+        backgroundColor: Color.fromRGBO(238, 221, 198, 1),
+      ),
+      AppBar(
+        automaticallyImplyLeading: false,
+        flexibleSpace: TopWidgetProfile(),
+        backgroundColor: Color.fromRGBO(238, 221, 198, 1),
+      ),
+    ];
+
+    void _onItemTapped(int index) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -84,11 +100,7 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
           selectedItemColor: Colors.amber[800],
           unselectedItemColor: Colors.grey,
           iconSize: 30,
-          onTap: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
+          onTap: _onItemTapped,
         ),
       ),
     );
@@ -96,6 +108,10 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
 }
 
 class TopWidgetHome extends StatefulWidget {
+  final String kitchenId;
+
+  TopWidgetHome({Key? key, required this.kitchenId}) : super(key: key);
+
   @override
   _TopWidgetState createState() => _TopWidgetState();
 }
@@ -203,11 +219,6 @@ class _TopWidgetProfileState extends State<TopWidgetProfile> {
 }
 
 class _TopWidgetState extends State<TopWidgetHome> {
-  Future<String> fetchAddress() async {
-    await Future.delayed(Duration(seconds: 2)); // Simulating a network call
-    return "Malini Apartments";
-  }
-
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -233,10 +244,31 @@ class _TopWidgetState extends State<TopWidgetHome> {
             ),
           ),
           Positioned(
+            top: 8,
+            left: screenWidth * 0.05,
+            child: GestureDetector(
+              onTap: () {
+                // Provide a meaningful action here
+                print('Image tapped!');
+              },
+              child: Container(
+                width: 35,
+                height: 35,
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage(
+                        'assets/images/Home/Image2184.png'), // Ensure this path is correct
+                    fit: BoxFit.fitWidth,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
             top: 13,
             left: screenWidth * 0.2,
             child: Text(
-              'LOCATION',
+              'Deliver to',
               textAlign: TextAlign.left,
               style: TextStyle(
                 color: Color.fromRGBO(73, 45, 28, 1),
@@ -249,24 +281,26 @@ class _TopWidgetState extends State<TopWidgetHome> {
           ),
           Positioned(
             top: 30,
+            width: 190,
             left: screenWidth * 0.2,
             child: FutureBuilder<String>(
-              future: fetchAddress(),
+              future: DatabaseService().fetchAddress(widget.kitchenId, 'Home'),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Text('Loading...', textAlign: TextAlign.left);
                 } else if (snapshot.hasError) {
                   return Text('Error', textAlign: TextAlign.left);
                 } else {
-                  return Text(
-                    snapshot.data ?? '',
-                    textAlign: TextAlign.left,
-                    style: TextStyle(
-                      color: Color.fromRGBO(103, 103, 103, 1),
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 1,
+                  return Text.rich(
+                    TextSpan(
+                      text: snapshot.data ?? '',
+                      style: TextStyle(
+                        color: Color.fromRGBO(103, 103, 103, 1),
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        height: 1,
+                      ),
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -335,30 +369,59 @@ class _TopWidgetState extends State<TopWidgetHome> {
 }
 
 class HomePage extends StatelessWidget {
+  final String kitchenId;
+
+  HomePage({Key? key, required this.kitchenId}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return FutureBuilder<Map<String, int>>(
+      future: DatabaseService().fetchordersCount(kitchenId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+              child:
+                  Loading()); // Use CircularProgressIndicator for loading state
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (!snapshot.hasData) {
+          return Center(child: Text('No data available'));
+        }
+
+        final data = snapshot.data!;
+        final ongoingOrdersCount = data['ongoingOrdersCount'] ?? 0;
+        final orderHistoryCount = data['orderHistoryCount'] ?? 0;
+
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildStatCard('Running Orders', '20', Colors.blue),
-                _buildStatCard('Order Request', '05', Colors.grey),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildStatCard('Running Orders',
+                        ongoingOrdersCount.toString(), Colors.blue),
+                    _buildStatCard('Previous Orders',
+                        orderHistoryCount.toString(), Colors.grey),
+                  ],
+                ),
+                SizedBox(height: 16),
+                _buildRevenueCard(),
+                SizedBox(height: 16),
+                _buildReviewCard(kitchenId),
+                SizedBox(height: 16),
+                _buildMostOrderedItems(kitchenId),
               ],
             ),
-            SizedBox(height: 16),
-            _buildRevenueCard(),
-            SizedBox(height: 16),
-            _buildReviewCard(),
-            SizedBox(height: 16),
-            _buildMostOrderedItems(),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -401,168 +464,235 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildRevenueCard() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(0, 6),
-            blurRadius: 6.0,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Total Revenue',
-            style: TextStyle(
-              color: Colors.black54,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                '\$2,241',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(width: 16),
-              DropdownButton<String>(
-                items:
-                    <String>['Daily', 'Weekly', 'Monthly'].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (_) {},
-                underline: Container(),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          Container(
-            height: 200,
-            child: Placeholder(), // Replace with your graph widget
-          ),
-        ],
-      ),
+    return RevenueChart(
+      revenueDataFuture: DatabaseService().fetchRevenueData(kitchenId),
     );
   }
 
-  Widget _buildReviewCard() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            offset: Offset(0, 6),
-            blurRadius: 6.0,
+  Widget _buildReviewCard(String kitchenId) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: DatabaseService().fetchKitchenData(kitchenId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: Loading());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text('No data available'));
+        }
+
+        final kitchenData = snapshot.data!;
+        final rating = kitchenData['rating'] ?? 0.0;
+        final orderHistory =
+            List<Map<String, dynamic>>.from(kitchenData['order_history'] ?? []);
+        final reviewCount = orderHistory.length;
+
+        return Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                offset: Offset(0, 6),
+                blurRadius: 6.0,
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Row(
+              SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.star, color: Colors.amber, size: 36),
-                  SizedBox(width: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.star, color: Colors.amber, size: 36),
+                      SizedBox(width: 8),
+                      Text(
+                        rating.toStringAsFixed(1),
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                   Text(
-                    '4.9',
+                    'Total $reviewCount Reviews',
                     style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
+                      color: Colors.black54,
+                      fontSize: 16,
                     ),
                   ),
                 ],
               ),
-              Text(
-                'Total 20 Reviews',
-                style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 16,
+              Spacer(),
+              TextButton(
+                onPressed: () {
+                  // Implement the functionality to see all reviews
+                },
+                child: Text(
+                  'See All Reviews',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ],
           ),
-          Spacer(),
-          TextButton(
-            onPressed: () {},
-            child: Text(
-              'See All Reviews',
-              style: TextStyle(
-                color: Colors.blue,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  List<String> mostOrderedItems = [
-    'Item 1',
-    'Item 2',
-    'Item 3',
-    'Item 4',
-    'Item 5',
-  ];
-  Widget _buildMostOrderedItems() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Most ordered items from your kitchen',
-          style: TextStyle(
-            color: Colors.black54,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(height: 16),
-        Container(
-          height: 150,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: mostOrderedItems.length,
-            itemBuilder: (context, index) {
-              return Container(
-                width: 150,
-                margin: EdgeInsets.only(right: 16),
-                color: Colors.grey[300],
-                child: Center(
-                  child: Text(
-                    mostOrderedItems[index],
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
-                    ),
-                  ),
+  Widget _buildMostOrderedItems(String kitchenId) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: DatabaseService().fetchKitchenData(kitchenId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: Loading());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text('No data available'));
+        }
+
+        final kitchenData = snapshot.data!;
+        final orderHistory =
+            List<Map<String, dynamic>>.from(kitchenData['order_history'] ?? []);
+        final items =
+            List<Map<String, dynamic>>.from(kitchenData['items'] ?? []);
+
+        // Calculate the total number of orders for each item
+        final Map<String, int> itemOrderCount = {};
+        for (var order in orderHistory) {
+          for (var item in order['items'] ?? []) {
+            final itemName = item['item_name'];
+            final quantity = item['quantity'];
+            if (itemName != null && quantity != null) {
+              itemOrderCount[itemName] =
+                  (itemOrderCount[itemName] ?? 0) + (quantity as int);
+            }
+          }
+        }
+
+        // Sort items by order count
+        final sortedItems = itemOrderCount.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Most ordered items',
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Poppins',
                 ),
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ),
+            SizedBox(height: 16),
+            Container(
+              height: 240,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: sortedItems.length,
+                itemBuilder: (context, index) {
+                  final itemName = sortedItems[index].key;
+                  final itemCount = sortedItems[index].value;
+                  final item = items.firstWhere(
+                    (element) => element['name'] == itemName,
+                    orElse: () => {
+                      'name': 'Unknown',
+                      'image_item': '',
+                      'description': ''
+                    },
+                  );
+
+                  return Container(
+                    width: 160,
+                    margin: EdgeInsets.only(right: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.white, Colors.grey[100]!],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 120,
+                            height: 120,
+                            child: item['image_item'] != ''
+                                ? Image.network(
+                                    item['image_item'],
+                                    fit: BoxFit.cover,
+                                  )
+                                : Icon(Icons.fastfood,
+                                    size: 100, color: Colors.grey[700]),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              itemName,
+                              style: TextStyle(
+                                color: Colors.black87,
+                                fontSize: 16,
+                                fontFamily: 'Poppins',
+                              ),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Orders: $itemCount',
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontSize: 14,
+                              fontFamily: 'Poppins',
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -605,6 +735,9 @@ class ChatPage extends StatelessWidget {
 }
 
 class OrdersPage extends StatelessWidget {
+  final String kitchenId;
+
+  OrdersPage({Key? key, required this.kitchenId}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Column(children: [
@@ -622,8 +755,8 @@ class OrdersPage extends StatelessWidget {
       Expanded(
         child: TabBarView(
           children: [
-            ChefOngoingOrders(),
-            ChefHistoryOrders(),
+            ChefOngoingOrders(kitchenId: kitchenId),
+            ChefHistoryOrders(kitchenId: kitchenId),
           ],
         ),
       ),
@@ -632,109 +765,149 @@ class OrdersPage extends StatelessWidget {
 }
 
 class ProfilePage extends StatelessWidget {
+  final String kitchenId;
+
+  ProfilePage({Key? key, required this.kitchenId}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: constraints.maxHeight,
-            ),
-            child: IntrinsicHeight(
-              child: Column(
-                children: [
-                  SizedBox(height: 20),
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundImage: AssetImage(
-                        'assets/images/Profile/Chechi.png'), // Example profile image
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    "Chechi's Chaikada",
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: DatabaseService()
+          .fetchKitchenProfile(kitchenId), // Replace with actual kitchen ID
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: Loading());
+        } else {
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (snapshot.hasData && snapshot.data != null) {
+            String kitchenName = snapshot.data!['name'] ?? 'Kitchen';
+            String avatarUrl = snapshot.data!['kitchenimage'] ?? '';
+            String email = snapshot.data!['email'] ?? 'Email';
+            String phoneNo = snapshot.data!['phone_number'] ?? '000-000-000';
+            String rating =
+                (snapshot.data!['rating'] as double?)?.toString() ?? '0';
+            String bio = snapshot.data!['bio'] ?? 'Homely';
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          SizedBox(height: 20),
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.grey,
+                            backgroundImage: avatarUrl.isNotEmpty
+                                ? NetworkImage(avatarUrl)
+                                : AssetImage(
+                                        'assets/images/Profile/default_avatar.png')
+                                    as ImageProvider,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            kitchenName,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                rating,
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 16,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              Icon(Icons.star, color: Colors.amber, size: 20),
+                            ],
+                          ),
+                          SizedBox(height: 20),
+                          _buildSection(
+                            context,
+                            title: 'Personal Info',
+                            icon: Icons.person,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => PersonalInfoPage(
+                                          username: kitchenName,
+                                          avatarurl: avatarUrl,
+                                          email: email,
+                                          phoneNo: phoneNo,
+                                          bio: bio,
+                                          id: kitchenId,
+                                        )),
+                              );
+                            },
+                            iconColor: Colors.redAccent,
+                          ),
+                          _buildSection(
+                            context,
+                            title: 'Address',
+                            icon: Icons.location_on,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => KitchenAddressPage(
+                                          kitchenId: kitchenId,
+                                        )),
+                              );
+                            },
+                            iconColor: Colors.red,
+                          ),
+                          _buildSection(
+                            context,
+                            title: 'Settings',
+                            icon: Icons.settings,
+                            onTap: () {},
+                            iconColor: Colors.deepPurple,
+                          ),
+                          SizedBox(height: 20),
+                          _buildSection(
+                            context,
+                            title: 'Withdrawal History',
+                            icon: Icons.history,
+                            onTap: () {},
+                            iconColor: Colors.orange,
+                          ),
+                          SizedBox(height: 20),
+                          _buildSection(
+                            context,
+                            title: 'Log Out',
+                            icon: Icons.logout,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => MainloginWidget()),
+                              );
+                            },
+                            iconColor: Colors.red,
+                          ),
+                          SizedBox(height: 20),
+                        ],
+                      ),
                     ),
                   ),
-                  Text(
-                    'Mallu aunty',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  _buildSection(
-                    context,
-                    title: 'Personal Info',
-                    icon: Icons.person,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => PersonalInfoPage()),
-                      );
-                    },
-                    iconColor: Colors.redAccent,
-                  ),
-                  _buildSection(
-                    context,
-                    title: 'Settings',
-                    icon: Icons.settings,
-                    onTap: () {},
-                    iconColor: Colors.deepPurple,
-                  ),
-                  SizedBox(height: 20),
-                  _buildSection(
-                    context,
-                    title: 'Withdrawal History',
-                    icon: Icons.history,
-                    onTap: () {},
-                    iconColor: Colors.orange,
-                    trailing: '',
-                  ),
-                  _buildSection(
-                    context,
-                    title: 'Number of Orders',
-                    icon: Icons.shopping_bag,
-                    onTap: () {},
-                    iconColor: Colors.blue,
-                    trailing: '29K',
-                  ),
-                  _buildSection(
-                    context,
-                    title: 'User reviews',
-                    icon: Icons.reviews,
-                    onTap: () {},
-                    iconColor: Colors.green,
-                  ),
-                  _buildSection(
-                    context,
-                    title: 'Available balance',
-                    icon: Icons.account_balance_wallet,
-                    onTap: () {},
-                    iconColor: Colors.teal,
-                    trailing: '\$500',
-                  ),
-                  SizedBox(height: 20),
-                  _buildSection(
-                    context,
-                    title: 'Log Out',
-                    icon: Icons.logout,
-                    onTap: () {},
-                    iconColor: Colors.red,
-                  ),
-                  SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ),
-        );
+                );
+              },
+            );
+          } else {
+            return Center(child: Text('Kitchen not found.'));
+          }
+        }
       },
     );
   }
@@ -778,20 +951,6 @@ class ProfilePage extends StatelessWidget {
                 : Icon(Icons.arrow_forward_ios, color: Colors.black),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class PersonalInfoPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Personal Info'),
-      ),
-      body: Center(
-        child: Text('Personal Info Page'),
       ),
     );
   }

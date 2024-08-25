@@ -37,7 +37,8 @@ class OrderCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Image.asset(imageUrl, width: 50, height: 50, fit: BoxFit.cover),
+                Image.network(imageUrl,
+                    width: 50, height: 50, fit: BoxFit.cover),
                 SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -51,7 +52,7 @@ class OrderCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Price:$price',
+                        'Price:Rs.$price',
                         style: TextStyle(
                           fontFamily: 'Poppins',
                         ),
@@ -104,9 +105,14 @@ class OrderCard extends StatelessWidget {
                   ),
                 ),
                 OutlinedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    final kitchenIdFuture =
+                        DatabaseService().fetchKitchenIdByName(name);
+                    final kitchenId = await kitchenIdFuture;
                     if (button2Text == 'Cancel') {
                       DatabaseService().deleteOngoingOrder(uid, orderId);
+                      DatabaseService()
+                          .deleteOngoingOrderKitchen(kitchenId, orderId);
                     }
                   },
                   child: Text(

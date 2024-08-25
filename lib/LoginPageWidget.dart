@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/chefhome.dart';
+import 'package:flutter_application_1/home.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_application_1/SignupuserWidget.dart';
 
-class ChefLoginWidget extends StatefulWidget {
+class LoginpageWidget extends StatefulWidget {
   @override
-  _ChefLoginWidgetState createState() => _ChefLoginWidgetState();
+  _LoginpageWidgetState createState() => _LoginpageWidgetState();
 }
 
-class _ChefLoginWidgetState extends State<ChefLoginWidget> {
+class _LoginpageWidgetState extends State<LoginpageWidget> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -30,7 +30,7 @@ class _ChefLoginWidgetState extends State<ChefLoginWidget> {
       // Proceed with login
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => ChefHomeScreen()),
+        MaterialPageRoute(builder: (context) => HomeScreen()),
       );
     }
   }
@@ -49,7 +49,7 @@ class _ChefLoginWidgetState extends State<ChefLoginWidget> {
                   height: double.infinity,
                   decoration: BoxDecoration(
                     image: DecorationImage(
-                      image: AssetImage('assets/images/chflgn/Image2183.png'),
+                      image: AssetImage('assets/images/login/Image2183.png'),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -77,7 +77,7 @@ class _ChefLoginWidgetState extends State<ChefLoginWidget> {
                             ),
                             SizedBox(height: 10),
                             Text(
-                              'Chef Login',
+                              'Customer Login',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.black,
@@ -150,12 +150,19 @@ class _ChefLoginWidgetState extends State<ChefLoginWidget> {
                                     ),
                                   ],
                                 ),
-                                Text(
-                                  'Forgot Password',
-                                  style: TextStyle(
-                                    color: Color.fromRGBO(65, 93, 241, 1),
-                                    fontFamily: 'Poppins',
-                                    fontSize: 14,
+                                GestureDetector(
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => HomeScreen()),
+                                  ),
+                                  child: Text(
+                                    'Forgot Password',
+                                    style: TextStyle(
+                                      color: Color.fromRGBO(65, 93, 241, 1),
+                                      fontFamily: 'Poppins',
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -200,7 +207,7 @@ class _ChefLoginWidgetState extends State<ChefLoginWidget> {
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) =>
-                                              ChefHomeScreen()),
+                                              SignupuserWidget()),
                                     );
                                   },
                                   child: Text(

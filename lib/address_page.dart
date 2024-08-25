@@ -47,7 +47,8 @@ class _AddAddressPageState extends State<AddAddressPage> {
 
     _locationData = await location.getLocation();
     setState(() {
-      _selectedLocation = LatLng(_locationData.latitude!, _locationData.longitude!);
+      _selectedLocation =
+          LatLng(_locationData.latitude!, _locationData.longitude!);
     });
 
     // Update address based on current location

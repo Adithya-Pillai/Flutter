@@ -1,86 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/services/database.dart';
 import 'package:flutter_application_1/widgets/chats.dart';
+import 'package:flutter_application_1/widgets/kitchenorders.dart';
+import 'package:flutter_application_1/widgets/loading.dart';
 import 'package:flutter_application_1/widgets/orders.dart';
 
 class ChefOngoingOrders extends StatelessWidget {
+  final String kitchenId;
+
+  const ChefOngoingOrders({Key? key, required this.kitchenId})
+      : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: [
-        const OrderCard(
-          imageUrl: 'assets/images/Home/sharath.png',
-          name: "Reddy's Kitchen",
-          price: 'Rs.520',
-          items: '06 Items',
-          orderId: '#162432',
-          button1Text: 'Order prepared',
-          button2Text: 'Cancel',
-          uid:'',
-        ),
-        const OrderCard(
-          imageUrl: 'assets/images/Home/idli.png',
-          name: 'Sree Devi House',
-          price: 'Rs.300',
-          items: '02 Items',
-          orderId: '#242432',
-          button1Text: 'Order prepared',
-          button2Text: 'Cancel',
-          uid:'',
-        ),
-        const OrderCard(
-          imageUrl: 'assets/images/Home/meals.png',
-          name: 'Sharma aunties kitchen',
-          price: 'Rs.250',
-          items: '01 Items',
-          orderId: '#240112',
-          button1Text: 'Order Prepared',
-          button2Text: 'Cancel',
-          uid:'',
-        ),
-      ],
+    return FutureBuilder<List<KitchenOrderCard>>(
+      future: DatabaseService().getOrdersForKitchen(kitchenId, 'Ongoing'),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: Loading());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text('No ongoing orders found.'));
+        } else {
+          return ListView.builder(
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              return snapshot.data![index];
+            },
+          );
+        }
+      },
     );
   }
 }
 
 class ChefHistoryOrders extends StatelessWidget {
+  final String
+      kitchenId; // Changed to 'kitchenId' to align with 'ChefOngoingOrders'
+
+  const ChefHistoryOrders({Key? key, required this.kitchenId})
+      : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: [
-        OrderCard(
-          imageUrl: 'assets/images/Home/sharath.png',
-          name: "Reddy's Kitchen",
-          price: 'Rs.520',
-          items: '03 Items',
-          orderId: '#162432',
-          date: '29 JAN, 12:30',
-          button1Text: 'Message',
-          button2Text: 'Reorder',
-          uid:''
-        ),
-        OrderCard(
-          imageUrl: 'assets/images/Home/idli.png',
-          name: 'Sree Devi House',
-          price: 'Rs.300',
-          items: '02 Items',
-          orderId: '#242432',
-          date: '30 JAN, 12:15',
-          button1Text: 'Message',
-          button2Text: 'Re-Order',
-          uid: '',
-        ),
-        OrderCard(
-          imageUrl: 'assets/images/Home/meals.png',
-          name: 'Sharma aunties kitchen',
-          price: 'Rs.250',
-          items: '01 Items',
-          orderId: '#240112',
-          date: '30 JAN, 12:30',
-          button1Text: 'Message',
-          button2Text: 'Re-Order',
-          uid:''
-        ),
-      ],
+    return FutureBuilder<List<KitchenOrderCard>>(
+      future: DatabaseService().getOrdersForKitchen(kitchenId, 'History'),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: Loading());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text('No previous orders found.'));
+        } else {
+          return ListView.builder(
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              return snapshot.data![index];
+            },
+          );
+        }
+      },
     );
   }
 }

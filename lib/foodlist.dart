@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_application_1/services/database.dart';
+import 'package:flutter_application_1/widgets/foodcard.dart';
+import 'package:flutter_application_1/widgets/loading.dart';
 import 'AddNewItemScreen.dart';
 
 class FoodListScreen extends StatefulWidget {
@@ -7,44 +11,69 @@ class FoodListScreen extends StatefulWidget {
 }
 
 class _FoodListScreenState extends State<FoodListScreen> {
-  List<Map<String, dynamic>> foodList = [
-    {
-      'name': 'Chicken Thai Biryani',
-      'price': 60,
-      'image':
-          'assets/images/foodlist/chickbir.png', // Replace with actual image path
-      'rating': 4.9,
-      'reviews': 10,
-    },
-    {
-      'name': 'Idli & vada',
-      'price': 30,
-      'image':
-          'assets/images/foodlist/idly.png', // Replace with actual image path
-      'rating': 4.9,
-      'reviews': 10,
-    },
-    {
-      'name': 'Puliyogare',
-      'price': 25,
-      'image':
-          'assets/images/foodlist/p1.png', // Replace with actual image path
-      'rating': 4.9,
-      'reviews': 10,
-    },
-  ];
+  Future<void> _deleteItem(String documentIdFieldValue) async {
+    try {
+      // Fetch all kitchen documents
+      QuerySnapshot querySnapshot =
+          await FirebaseFirestore.instance.collection('kitchens').get();
 
-  void _addNewItem() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => AddNewItemScreen()),
-    );
+      // Iterate over each kitchen document
+      for (var doc in querySnapshot.docs) {
+        String kitchenId = doc.id; // Use the document ID as the kitchen ID
+        List items = List.from(doc['items']); // Make a copy of the items list
+
+        // Find and remove the item with the specified ID
+        items.removeWhere((item) => item['item_id'] == documentIdFieldValue);
+
+        // Update the document with the modified items list
+        await FirebaseFirestore.instance
+            .collection('kitchens')
+            .doc(kitchenId)
+            .update({'items': items});
+      }
+      print('Item deleted successfully');
+      setState(() {}); // Refresh the list after deletion
+    } catch (e) {
+      print('Error deleting item: $e');
+    }
   }
 
-  void _deleteItem(int index) {
-    setState(() {
-      foodList.removeAt(index);
-    });
+  Future<void> _incrementQuantity(String documentIdFieldValue) async {
+    try {
+      // Fetch all kitchen documents
+      QuerySnapshot querySnapshot =
+          await FirebaseFirestore.instance.collection('kitchens').get();
+
+      // Iterate over each kitchen document
+      for (var doc in querySnapshot.docs) {
+        String kitchenId = doc.id; // Use the document ID as the kitchen ID
+        List items = List.from(doc['items']); // Make a copy of the items list
+
+        // Find the item with the specified ID and increment its quantity
+        bool itemFound = false;
+        for (var item in items) {
+          if (item['item_id'] == documentIdFieldValue) {
+            // Increment the quantity
+            item['quantity'] = (item['quantity'] ?? 0) + 1;
+            itemFound = true;
+            break;
+          }
+        }
+
+        if (itemFound) {
+          // Update the document with the modified items list
+          await FirebaseFirestore.instance
+              .collection('kitchens')
+              .doc(kitchenId)
+              .update({'items': items});
+
+          print('Item quantity incremented successfully');
+        }
+      }
+      setState(() {}); // Refresh the list after incrementing
+    } catch (e) {
+      print('Error incrementing quantity: $e');
+    }
   }
 
   @override
@@ -53,60 +82,50 @@ class _FoodListScreenState extends State<FoodListScreen> {
       appBar: AppBar(
         title: Text('My Food List'),
         backgroundColor: Color(0xFFEEDDC6),
-        automaticallyImplyLeading: false, // Remove back arrow
+        automaticallyImplyLeading: false,
       ),
       body: Container(
-        color: Color(0xFFEEDDC6), // Full page background color
-        child: ListView.builder(
-          padding: EdgeInsets.all(16.0),
-          itemCount: foodList.length,
-          itemBuilder: (context, index) {
-            final item = foodList[index];
-            return Card(
-              margin: EdgeInsets.symmetric(vertical: 8.0),
-              elevation: 3,
-              child: ListTile(
-                leading: Image.asset(
-                  item['image'],
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                ),
-                title: Text(
-                  item['name'],
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 4),
-                    Text('\$${item['price']}'),
-                    SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.star, color: Colors.amber, size: 16),
-                        SizedBox(width: 4),
-                        Text('${item['rating']} (${item['reviews']} reviews)'),
-                      ],
-                    ),
-                  ],
-                ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (String value) {
-                    if (value == 'delete') {
-                      _deleteItem(index);
-                    }
-                  },
-                  itemBuilder: (BuildContext context) {
-                    return [
-                      PopupMenuItem<String>(
-                        value: 'delete',
-                        child: Text('Delete'),
-                      ),
-                    ];
-                  },
-                ),
-              ),
+        color: Color(0xFFEEDDC6),
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: DatabaseService().getFoodList('abc', _deleteItem),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              print("Error in snapshot: ${snapshot.error}");
+              return Center(
+                child: Text('Error: ${snapshot.error}'),
+              );
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(
+                child: const Loading(),
+              );
+            }
+
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              print("Snapshot data is empty");
+              return Center(
+                child: Text('No items found'),
+              );
+            }
+
+            // Display the list of FoodCards
+            return ListView.builder(
+              padding: EdgeInsets.all(16.0),
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                final item = snapshot.data![index];
+                return FoodCard(
+                  imageUrl: item['imageUrl'],
+                  name: item['name'],
+                  price: item['price'],
+                  description: item['description'],
+                  quantity: item['quantity'],
+                  documentId: item['documentId'],
+                  onDelete: () => _deleteItem(item['documentId']),
+                  onIncrement: () => _incrementQuantity(item['documentId']),
+                );
+              },
             );
           },
         ),

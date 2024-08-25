@@ -1,4 +1,9 @@
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/chefhome.dart';
+import 'package:image_picker/image_picker.dart'; // Import image_picker package
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore package
+import 'dart:io';
 import 'foodlist.dart';
 
 class AddNewItemScreen extends StatefulWidget {
@@ -9,47 +14,136 @@ class AddNewItemScreen extends StatefulWidget {
 class _AddNewItemScreenState extends State<AddNewItemScreen> {
   final Color backgroundColor = Color(0xFFEEDDC6);
   final Color bottomBarColor = Color(0xFF3C260C);
-  int? _selectedOption = 0;
+  String? _selectedCategory;
+  XFile? _selectedImage; // Variable to store the selected image
 
-  List<String> selectedBasicAllergens = [];
-  List<String> selectedFruitAllergens = [];
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _quantityController = TextEditingController();
+  final TextEditingController _nameController =
+      TextEditingController(); // Controller for item name
+  final TextEditingController _descriptionController =
+      TextEditingController(); // Controller for description
+
+  final ImagePicker _picker = ImagePicker(); // Instance of ImagePicker
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   void _resetSelections() {
     setState(() {
-      selectedBasicAllergens.clear();
-      selectedFruitAllergens.clear();
+      _selectedCategory = null;
+      _selectedImage = null;
+      _nameController.clear();
+      _priceController.clear();
+      _quantityController.clear();
+      _descriptionController.clear();
     });
   }
 
-  void _toggleSelection(String allergen, List<String> selectedList) {
+  void _toggleSelection(String category) {
     setState(() {
-      if (selectedList.contains(allergen)) {
-        selectedList.remove(allergen);
+      if (_selectedCategory == category) {
+        _selectedCategory = null;
       } else {
-        selectedList.add(allergen);
+        _selectedCategory = category;
       }
     });
   }
 
-  Color _getChipColor(String allergen, List<String> selectedList) {
-    if (selectedList.contains(allergen)) {
+  Color _getChipColor(String category) {
+    if (_selectedCategory == category) {
       return Colors.brown[400]!;
     } else {
       return Colors.brown[100]!;
     }
   }
 
-  void _submitItem() {
-    // Navigate to FoodListScreen after submitting the item
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => FoodListScreen()),
-    );
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    setState(() {
+      _selectedImage = image;
+    });
+  }
+
+  Future<void> _submitItem() async {
+    print("Submit button pressed");
+
+    String itemId = DateTime.now().millisecondsSinceEpoch.toString();
+    String itemName = _nameController.text.trim();
+    String description = _descriptionController.text.trim();
+
+    if (itemName.isEmpty ||
+        _priceController.text.isEmpty ||
+        _quantityController.text.isEmpty ||
+        _selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill out all fields.')),
+      );
+      return;
+    }
+
+    String? imageUrl;
+    if (_selectedImage == null) print("Empty");
+    if (_selectedImage != null) {
+      try {
+        Reference ref =
+            FirebaseStorage.instance.ref().child('item_images/$itemId');
+        await ref.putFile(File(_selectedImage!.path));
+        imageUrl = await ref.getDownloadURL();
+        print('Image URL: $imageUrl'); // Debug print
+      } catch (e) {
+        print('Error uploading image: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading image.')),
+        );
+        return;
+      }
+    }
+
+    try {
+      DocumentReference kitchenRef =
+          _firestore.collection('kitchens').doc('abc');
+      DocumentSnapshot kitchenDoc = await kitchenRef.get();
+      List<dynamic> items = List.from(kitchenDoc['items']);
+
+      bool itemFound = false;
+      for (var item in items) {
+        if (item['item_id'] == itemId) {
+          item['quantity'] = (item['quantity'] ?? 0) + 1;
+          itemFound = true;
+          break;
+        }
+      }
+
+      if (!itemFound) {
+        items.add({
+          'item_id': itemId,
+          'name': itemName,
+          'price': double.tryParse(_priceController.text) ?? 0.0,
+          'category_id': _selectedCategory,
+          'description': description,
+          'quantity': int.tryParse(_quantityController.text) ?? 0,
+          'image_item': imageUrl ?? 'assets/images/default_image.png',
+        });
+      }
+
+      await kitchenRef.update({'items': items});
+      print('Item submitted successfully!');
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ChefHomeScreen()),
+      );
+    } catch (e) {
+      print('Error submitting item: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error submitting item.')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         backgroundColor: backgroundColor,
         elevation: 0,
@@ -72,176 +166,107 @@ class _AddNewItemScreenState extends State<AddNewItemScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('ITEM NAME',
-                  style: TextStyle(fontSize: 16, color: Colors.brown)),
-              SizedBox(height: 8),
-              TextField(
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  hintText: 'Mozalichiken Halim',
-                  border: OutlineInputBorder(),
+              ListTile(
+                title: Text('ITEM NAME',
+                    style: TextStyle(fontSize: 16, color: Colors.brown)),
+                subtitle: TextField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    hintText: 'Idli/Dosa/...',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
               ),
-              SizedBox(height: 16),
-              Text('UPLOAD PHOTO/VIDEO',
-                  style: TextStyle(fontSize: 16, color: Colors.brown)),
-              SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
+              ListTile(
+                title: Text('UPLOAD PHOTO',
+                    style: TextStyle(fontSize: 16, color: Colors.brown)),
+                subtitle: GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
                     width: 100,
                     height: 100,
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage(
-                            'assets/images/icons/food.jpg'), // replace with your image
-                        fit: BoxFit.cover,
-                      ),
+                    color: Colors.grey[200],
+                    child: Center(
+                      child: _selectedImage == null
+                          ? Icon(Icons.add,
+                              color: Color.fromARGB(255, 231, 185, 130))
+                          : Image.file(File(_selectedImage!.path),
+                              fit: BoxFit.cover),
                     ),
                   ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 100,
-                          height: 100,
-                          color: Colors.grey[200],
-                          child: Center(
-                              child: Icon(Icons.add,
-                                  color: Color.fromARGB(255, 231, 185, 130))),
-                        ),
-                        SizedBox(width: 8),
-                        Container(
-                          width: 100,
-                          height: 100,
-                          color: Colors.grey[200],
-                          child: Center(
-                              child: Icon(Icons.add,
-                                  color: Color.fromARGB(255, 231, 185, 130))),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              Text('PRICE',
-                  style: TextStyle(fontSize: 16, color: Colors.brown)),
-              SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: TextField(
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    flex: 3,
-                    child: Row(
-                      children: [
-                        Radio<int>(
-                          value: 0,
-                          groupValue: _selectedOption,
-                          onChanged: (int? value) {
-                            setState(() {
-                              _selectedOption = value;
-                            });
-                          },
-                        ),
-                        Text('Pick up', style: TextStyle(color: Colors.brown)),
-                        Radio<int>(
-                          value: 1,
-                          groupValue: _selectedOption,
-                          onChanged: (int? value) {
-                            setState(() {
-                              _selectedOption = value;
-                            });
-                          },
-                        ),
-                        Text('Delivery', style: TextStyle(color: Colors.brown)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              Text('ALLERGEN INFORMATION',
-                  style: TextStyle(fontSize: 16, color: Colors.brown)),
-              SizedBox(height: 8),
-              Text('Basic',
-                  style: TextStyle(fontSize: 14, color: Colors.brown)),
-              SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildSelectableChip('Salt', 'assets/images/icons/salt.png',
-                      selectedBasicAllergens),
-                  _buildSelectableChip(
-                      'Chicken',
-                      'assets/images/icons/chicken.png',
-                      selectedBasicAllergens),
-                  _buildSelectableChip('Onion', 'assets/images/icons/onion.png',
-                      selectedBasicAllergens),
-                  _buildSelectableChip('Garlic',
-                      'assets/images/icons/garlic.png', selectedBasicAllergens),
-                  _buildSelectableChip(
-                      'Peppers',
-                      'assets/images/icons/peppers.png',
-                      selectedBasicAllergens),
-                  _buildSelectableChip('Ginger',
-                      'assets/images/icons/ginger.png', selectedBasicAllergens),
-                ],
-              ),
-              SizedBox(height: 8),
-              Text('Fruit',
-                  style: TextStyle(fontSize: 14, color: Colors.brown)),
-              SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildSelectableChip(
-                      'Avocado',
-                      'assets/images/icons/avocado.png',
-                      selectedFruitAllergens),
-                  _buildSelectableChip('Apple', 'assets/images/icons/apple.png',
-                      selectedFruitAllergens),
-                  _buildSelectableChip(
-                      'Blueberry',
-                      'assets/images/icons/blueberry.png',
-                      selectedFruitAllergens),
-                  _buildSelectableChip(
-                      'Broccoli',
-                      'assets/images/icons/broccoli.png',
-                      selectedFruitAllergens),
-                  _buildSelectableChip('Orange',
-                      'assets/images/icons/orange.png', selectedFruitAllergens),
-                  _buildSelectableChip('Walnut',
-                      'assets/images/icons/walnut.png', selectedFruitAllergens),
-                ],
-              ),
-              SizedBox(height: 16),
-              Text('DETAILS',
-                  style: TextStyle(fontSize: 16, color: Colors.brown)),
-              SizedBox(height: 8),
-              TextField(
-                maxLines: 4,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(),
                 ),
               ),
-              SizedBox(height: 16),
+              ListTile(
+                title: Text('Details',
+                    style: TextStyle(fontSize: 16, color: Colors.brown)),
+                subtitle: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: _priceController,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(),
+                          hintText: 'Enter price',
+                        ),
+                        keyboardType:
+                            TextInputType.numberWithOptions(decimal: true),
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      flex: 1,
+                      child: TextField(
+                        controller: _quantityController,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(),
+                          hintText: 'Qty',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ListTile(
+                title: Text('Category',
+                    style: TextStyle(fontSize: 16, color: Colors.brown)),
+                subtitle: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildSelectableChip(
+                        'South Indian', 'assets/images/icons/peppers.png'),
+                    _buildSelectableChip(
+                        'North Indian', 'assets/images/icons/chicken.png'),
+                    _buildSelectableChip(
+                        'Snacks', 'assets/images/icons/walnut.png'),
+                    _buildSelectableChip(
+                        'Beverages', 'assets/images/icons/beverages.jpg'),
+                    _buildSelectableChip(
+                        'Sweets', 'assets/images/icons/sweets.png'),
+                  ],
+                ),
+              ),
+              ListTile(
+                title: Text('Description',
+                    style: TextStyle(fontSize: 16, color: Colors.brown)),
+                subtitle: TextField(
+                  controller: _descriptionController,
+                  maxLines: 1,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
               Center(
                 child: ElevatedButton(
                   onPressed: _submitItem,
@@ -256,7 +281,6 @@ class _AddNewItemScreenState extends State<AddNewItemScreen> {
                   child: Text('Submit', style: TextStyle(fontSize: 16)),
                 ),
               ),
-              SizedBox(height: 16),
             ],
           ),
         ),
@@ -264,14 +288,13 @@ class _AddNewItemScreenState extends State<AddNewItemScreen> {
     );
   }
 
-  Widget _buildSelectableChip(
-      String label, String iconPath, List<String> selectedList) {
+  Widget _buildSelectableChip(String label, String iconPath) {
     return GestureDetector(
-      onTap: () => _toggleSelection(label, selectedList),
+      onTap: () => _toggleSelection(label),
       child: Chip(
         label: Text(label),
-        avatar: Image.asset(iconPath),
-        backgroundColor: _getChipColor(label, selectedList),
+        backgroundColor: _getChipColor(label),
+        avatar: Image.asset(iconPath, width: 24, height: 24),
       ),
     );
   }

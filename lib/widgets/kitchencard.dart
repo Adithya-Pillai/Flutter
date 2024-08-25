@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/RestaurantViewScreen.dart';
+import 'package:flutter_application_1/cartprovider.dart';
 import 'package:flutter_application_1/models/kitchen.dart';
 import 'package:flutter_application_1/review_screen.dart';
 import 'package:flutter_application_1/services/database.dart';
 import 'package:flutter_application_1/widgets/loading.dart';
+import 'package:provider/provider.dart';
 
 class TopRatedKitchenList extends StatelessWidget {
   const TopRatedKitchenList({Key? key}) : super(key: key);
@@ -52,6 +54,7 @@ class TopRatedKitchenCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        Provider.of<CartProvider>(context, listen: false).clearCart();
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -65,7 +68,7 @@ class TopRatedKitchenCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Image.asset(
+            Image.network(
               kitchen.kitchenImage,
               width: double.infinity,
               height: 200,

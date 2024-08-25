@@ -1,9 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/cartprovider.dart';
 import 'package:flutter_application_1/congratulations.dart';
 import 'package:flutter_application_1/payment2.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_application_1/services/database.dart';
 
 class Androidlarge21Widget extends StatefulWidget {
-  const Androidlarge21Widget({Key? key}) : super(key: key);
+  final List<CartItem> cartItems;
+  final String kitchenId;
+  final double total;
+  final String uid = 'Hwk6nxoDNb58y9W6ek7w';
+
+  const Androidlarge21Widget(
+      {Key? key,
+      required this.cartItems,
+      required this.kitchenId,
+      required this.total})
+      : super(key: key);
 
   @override
   _Androidlarge21WidgetState createState() => _Androidlarge21WidgetState();
@@ -18,11 +31,124 @@ class _Androidlarge21WidgetState extends State<Androidlarge21Widget> {
     });
   }
 
-  void _navigateToCongratulationsPage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => CongratulationsPage()),
-    );
+  Future<void> _navigateToCongratulationsPage() async {
+    try {
+      // Fetch kitchen and user names asynchronously
+      final kitchenNameFuture =
+          DatabaseService().fetchKitchenName(widget.kitchenId);
+      final userNameFuture = DatabaseService().fetchUserName(widget.uid);
+      final kitchenimageUrlFuture =
+          DatabaseService().fetchImageurlkitchen(widget.kitchenId);
+      print(widget.kitchenId);
+      final userimageUrlFuture =
+          DatabaseService().fetchImageurluser(widget.uid);
+
+      // Wait for both futures to complete
+      final kitchenName = await kitchenNameFuture;
+      final userName = await userNameFuture;
+      final kitchenUrl = await kitchenimageUrlFuture;
+      final userUrl = await userimageUrlFuture;
+
+      // Generate a unique order ID using the current timestamp
+      final orderId = DateTime.now().millisecondsSinceEpoch.toString();
+
+      // Prepare the order data for the kitchen
+      final orderDataKitchen = {
+        'order_id': orderId,
+        'status': 'ongoing',
+        'items': widget.cartItems
+            .map((item) => {
+                  'item_name': item.productName,
+                  'quantity': item.productCartQuantity,
+                })
+            .toList(),
+        'imageUrl': userUrl,
+        'customer_name': userName,
+        'price': '${widget.total.toStringAsFixed(2)}',
+        'date': DateTime.now().toIso8601String(),
+        'button1Text': 'Prepared',
+        'button2Text': 'Cancel',
+      };
+
+      // Prepare the order data for the user
+      final orderData = {
+        'order_id': orderId,
+        'status': 'ongoing',
+        'items': widget.cartItems
+            .map((item) => {
+                  'item_name': item.productName,
+                  'quantity': item.productCartQuantity,
+                })
+            .toList(),
+        'imageUrl': kitchenUrl,
+        'kitchen_name': kitchenName,
+        'price': '${widget.total.toStringAsFixed(2)}',
+        'date': DateTime.now().toIso8601String(),
+        'button1Text': 'Track',
+        'button2Text': 'Cancel',
+      };
+
+      // Firestore transaction to update user and kitchen order and items
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        // Reference to kitchen and user documents
+        DocumentReference kitchenDocRef = FirebaseFirestore.instance
+            .collection('kitchens')
+            .doc(widget.kitchenId);
+        DocumentReference userDocRef =
+            FirebaseFirestore.instance.collection('users').doc(widget.uid);
+
+        // Fetch the current data for the kitchen
+        DocumentSnapshot kitchenSnapshot = await transaction.get(kitchenDocRef);
+
+        if (!kitchenSnapshot.exists) {
+          throw Exception("Kitchen does not exist");
+        }
+
+        // Get the kitchen's items
+        List<dynamic> kitchenItems =
+            List<dynamic>.from(kitchenSnapshot['items'] ?? []);
+
+        // Loop through cart items and update the quantities in the kitchen's items
+        for (var cartItem in widget.cartItems) {
+          String itemName = cartItem.productName;
+          int orderedQuantity = cartItem.productCartQuantity;
+
+          // Find the corresponding item in the kitchen's items and update its quantity
+          for (var kitchenItem in kitchenItems) {
+            if (kitchenItem['name'] == itemName) {
+              kitchenItem['quantity'] -=
+                  orderedQuantity; // Decrease the quantity
+              if (kitchenItem['quantity'] < 0) {
+                kitchenItem['quantity'] =
+                    0; // Ensure quantity doesn't go below zero
+              }
+              break;
+            }
+          }
+        }
+
+        // Update the kitchen's ongoing orders and items in Firestore
+        transaction.update(kitchenDocRef, {
+          'ongoing_orders': FieldValue.arrayUnion([orderDataKitchen]),
+          'items':
+              kitchenItems, // Update the items with the modified quantities
+        });
+
+        // Update the user's ongoing orders in Firestore
+        transaction.update(userDocRef, {
+          'ongoing_orders': FieldValue.arrayUnion([orderData]),
+        });
+      });
+
+      // Navigate to the Congratulations page
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => CongratulationsPage()),
+      );
+    } catch (e) {
+      print('Error navigating to Congratulations page: $e');
+      // Optionally, handle the error by showing a message to the user
+    }
   }
 
   @override
@@ -115,7 +241,7 @@ class _Androidlarge21WidgetState extends State<Androidlarge21Widget> {
                     ),
                     SizedBox(width: screenWidth * 0.01),
                     Text(
-                      '1250',
+                      '${widget.total.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: screenWidth * 0.045,

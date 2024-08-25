@@ -177,83 +177,6 @@ class _TopWidgetState extends State<TopWidgetHome> {
             ),
           ),
           Positioned(
-            top: 0,
-            right: screenWidth * 0.2,
-            child: Container(
-              width: 48,
-              height: 53,
-              child: Stack(
-                children: <Widget>[
-                  Positioned(
-                    top: 8,
-                    left: 0,
-                    child: GestureDetector(
-                      onTap: () => {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => FoodOrderPage()),
-                        )
-                      },
-                      child: Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image:
-                                AssetImage('assets/images/Home/Image2185.png'),
-                            fit: BoxFit.fitWidth,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 0,
-                    left: 23,
-                    child: Container(
-                      width: 25,
-                      height: 25,
-                      child: Stack(
-                        children: <Widget>[
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            child: Container(
-                              width: 25,
-                              height: 25,
-                              decoration: BoxDecoration(
-                                color: Color.fromRGBO(234, 69, 69, 1),
-                                borderRadius: BorderRadius.all(
-                                  Radius.elliptical(25, 25),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 3,
-                            left: 8,
-                            child: Text(
-                              '2',
-                              textAlign: TextAlign.left,
-                              style: TextStyle(
-                                color: Color.fromRGBO(255, 255, 255, 1),
-                                fontFamily: 'Sen',
-                                fontSize: 16,
-                                fontWeight: FontWeight.normal,
-                                height: 1,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
             top: 8,
             left: screenWidth * 0.05,
             child: GestureDetector(
@@ -585,6 +508,7 @@ class ProfilePage extends StatelessWidget {
             String avatarurl = snapshot.data!['avatarurl'] ?? '';
             String email = snapshot.data!['email'] ?? 'Email';
             String phoneNo = snapshot.data!['phone_number'] ?? '000-000-000';
+            String bio = snapshot.data!['bio'] ?? 'Homely';
 
             return LayoutBuilder(
               builder: (context, constraints) {
@@ -605,6 +529,8 @@ class ProfilePage extends StatelessWidget {
                                       avatarurl: avatarurl,
                                       email: email,
                                       phoneNo: phoneNo,
+                                      bio: bio,
+                                      id: 'Hwk6nxoDNb58y9W6ek7w',
                                     )),
                           );
                         },
@@ -615,7 +541,7 @@ class ProfilePage extends StatelessWidget {
                               radius: 50,
                               backgroundColor: Colors.grey,
                               backgroundImage: avatarurl.isNotEmpty
-                                  ? AssetImage(avatarurl)
+                                  ? NetworkImage(avatarurl)
                                   : null,
                             ),
                             SizedBox(height: 16),
@@ -642,6 +568,8 @@ class ProfilePage extends StatelessWidget {
                                             avatarurl: avatarurl,
                                             email: email,
                                             phoneNo: phoneNo,
+                                            bio: bio,
+                                            id: 'Hwk6nxoDNb58y9W6ek7w',
                                           )),
                                 );
                               },
@@ -655,7 +583,9 @@ class ProfilePage extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) => MyAddressPage()),
+                                      builder: (context) => MyAddressPage(
+                                            id: 'Hwk6nxoDNb58y9W6ek7w',
+                                          )),
                                 );
                               },
                               iconColor: Colors.red,
@@ -670,15 +600,9 @@ class ProfilePage extends StatelessWidget {
                             SizedBox(height: 16),
                             _buildSection(
                               context,
-                              title: 'Cart',
+                              title: 'About Us',
                               icon: Icons.shopping_cart,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => FoodOrderPage()),
-                                );
-                              },
+                              onTap: () {},
                               iconColor: Colors.green,
                             ),
                             _buildSection(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/RestaurantViewScreen.dart';
 import 'package:flutter_application_1/services/database.dart';
 import 'package:flutter_application_1/widgets/loading.dart';
 
@@ -77,48 +78,59 @@ class _CategoryDishesScreenState extends State<CategoryDishesScreen> {
               itemCount: dishes.length,
               itemBuilder: (context, index) {
                 final dish = dishes[index];
-                return Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16.0),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16.0),
-                        child: Image.network(
-                          dish['image_item'] ??
-                              'assets/images/placeholder_image.jpg',
-                          height: 120,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => RestaurantViewScreen(
+                                kitchenId: dish['kitchen_id'],
+                              )),
+                    );
+                  },
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.0),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16.0),
+                          child: Image.network(
+                            dish['image_item'] ??
+                                'https://firebasestorage.googleapis.com/v0/b/homely-project-8be33.appspot.com/o/placeholder_images%2Fhomely_logo.jpeg?alt=media&token=9089f046-ad45-48c3-8ad6-b3f30c3ee7a5',
+                            height: 120,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              dish['name'] ?? 'Dish Name',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.brown,
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                dish['name'] ?? 'Dish Name',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.brown,
+                                ),
                               ),
-                            ),
-                            Text(
-                              dish['description'] ??
-                                  'Description not available',
-                              style: TextStyle(color: Colors.brown),
-                            ),
-                            Text(
-                              'Rs. ${dish['price'] ?? '0'}/-',
-                              style: TextStyle(color: Colors.brown),
-                            ),
-                          ],
+                              Text(
+                                dish['description'] ??
+                                    'Description not available',
+                                style: TextStyle(color: Colors.brown),
+                              ),
+                              Text(
+                                'Rs. ${dish['price'] ?? '0'}/-',
+                                style: TextStyle(color: Colors.brown),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },

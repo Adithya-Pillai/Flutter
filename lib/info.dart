@@ -7,14 +7,18 @@ class PersonalInfoPage extends StatelessWidget {
   final String email;
   final String phoneNo;
   final String avatarurl;
+  final String bio;
+  final String id;
 
-  const PersonalInfoPage(
-      {Key? key,
-      required this.username,
-      required this.email,
-      required this.phoneNo,
-      required this.avatarurl})
-      : super(key: key);
+  const PersonalInfoPage({
+    Key? key,
+    required this.username,
+    required this.email,
+    required this.phoneNo,
+    required this.avatarurl,
+    required this.bio,
+    required this.id,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +52,8 @@ class PersonalInfoPage extends StatelessWidget {
                           avatarurl: avatarurl,
                           email: email,
                           phoneNo: phoneNo,
+                          bio: bio,
+                          id: id,
                         )),
               );
             },
@@ -70,7 +76,7 @@ class PersonalInfoPage extends StatelessWidget {
               radius: 50,
               backgroundColor: Colors.grey,
               backgroundImage:
-                  avatarurl.isNotEmpty ? AssetImage(avatarurl) : null,
+                  avatarurl.isNotEmpty ? NetworkImage(avatarurl) : null,
             ),
             SizedBox(height: 16),
             Text(

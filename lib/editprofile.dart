@@ -1,13 +1,18 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_application_1/home.dart';
-import 'package:flutter_application_1/services/database.dart'; // Adjust import path as per your project structure
+import 'package:flutter_application_1/services/database.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String username;
   final String email;
   final String phoneNo;
   final String avatarurl;
+  final String bio;
+  final String id;
 
   const EditProfilePage({
     Key? key,
@@ -15,6 +20,8 @@ class EditProfilePage extends StatefulWidget {
     required this.email,
     required this.phoneNo,
     required this.avatarurl,
+    required this.bio,
+    required this.id,
   }) : super(key: key);
 
   @override
@@ -27,7 +34,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController phoneController;
   late TextEditingController bioController;
 
-  final DatabaseService _db = DatabaseService(); // Instantiate DatabaseService
+  final DatabaseService _db = DatabaseService();
+  File? _imageFile; // For storing the picked image
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -35,7 +44,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     nameController = TextEditingController(text: widget.username);
     emailController = TextEditingController(text: widget.email);
     phoneController = TextEditingController(text: widget.phoneNo);
-    bioController = TextEditingController(text: 'I love fast food');
+    bioController = TextEditingController(text: widget.bio);
   }
 
   @override
@@ -47,8 +56,50 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+
+      // Upload image to Firebase Storage
+      await _uploadImage();
+    }
+  }
+
+  Future<void> _uploadImage() async {
+    if (_imageFile != null) {
+      try {
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('avatars')
+            .child('${widget.id}.jpg'); // Use widget.id
+
+        await storageRef.putFile(_imageFile!);
+
+        final downloadURL = await storageRef.getDownloadURL();
+
+        // Update avatar URL in Firestore
+        await _db.updateUserData(
+          widget.id,
+          avatarurl: downloadURL,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Profile picture updated successfully')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload image')),
+        );
+        print('Error uploading image: $e');
+      }
+    }
+  }
+
   void _saveProfile() async {
-    String uid = 'Hwk6nxoDNb58y9W6ek7w'; // Replace with actual user ID
     String newName = nameController.text.trim();
     String newEmail = emailController.text.trim();
     String newPhoneNo = phoneController.text.trim();
@@ -56,13 +107,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     try {
       await _db.updateUserData(
-        uid,
+        widget.id,
         name: newName,
         email: newEmail,
         phoneNumber: newPhoneNo,
         bio: newBio,
       );
-      // Show success message or navigate to another page
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Profile updated successfully')),
       );
@@ -71,7 +121,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } catch (e) {
-      // Handle error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update profile')),
       );
@@ -108,23 +157,28 @@ class _EditProfilePageState extends State<EditProfilePage> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: constraints.maxWidth * 0.15,
-                    backgroundColor: Colors.grey,
-                    backgroundImage: widget.avatarurl.isNotEmpty
-                        ? AssetImage(widget.avatarurl)
-                        : null,
-                    child: Stack(
-                      children: [
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: CircleAvatar(
-                            backgroundColor: Colors.red,
-                            radius: constraints.maxWidth * 0.05,
-                            child: Icon(Icons.edit, color: Colors.white),
+                  GestureDetector(
+                    onTap: _pickImage, // Pick image on tap
+                    child: CircleAvatar(
+                      radius: constraints.maxWidth * 0.15,
+                      backgroundColor: Colors.grey,
+                      backgroundImage: _imageFile != null
+                          ? FileImage(_imageFile!)
+                          : widget.avatarurl.isNotEmpty
+                              ? NetworkImage(widget.avatarurl)
+                              : null,
+                      child: Stack(
+                        children: [
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: CircleAvatar(
+                              backgroundColor: Colors.red,
+                              radius: constraints.maxWidth * 0.05,
+                              child: Icon(Icons.edit, color: Colors.white),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   SizedBox(height: constraints.maxHeight * 0.03),
@@ -173,12 +227,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 }
 
+// ProfileTextField widget for reusable text field UI
 class ProfileTextField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final int maxLines;
 
-  ProfileTextField({
+  const ProfileTextField({
     required this.label,
     required this.controller,
     this.maxLines = 1,
