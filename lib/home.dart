@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_application_1/aboutus.dart';
 import 'package:flutter_application_1/address.dart';
 import 'package:flutter_application_1/cart.dart';
 import 'package:flutter_application_1/info.dart';
@@ -10,12 +11,11 @@ import 'package:flutter_application_1/widgets/categories.dart';
 import 'package:flutter_application_1/widgets/chats.dart';
 import 'package:flutter_application_1/widgets/kitchencard.dart';
 import 'dart:math' as math;
-
 import 'package:flutter_application_1/widgets/loading.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
-  final String uid = 'Hwk6nxoDNb58y9W6ek7w';
+  const HomeScreen({Key? key, required this.uid}) : super(key: key);
+  final String uid;
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -24,43 +24,47 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  static final List<Widget> _widgetOptions = <Widget>[
-    HomePage(),
-    ChatPage(),
-    OrdersPage(),
-    ProfilePage(),
-  ];
+  List<Widget> _getWidgetOptions() {
+    return <Widget>[
+      HomePage(userId: widget.uid),
+      ChatPage(),
+      OrdersPage(userId: widget.uid),
+      ProfilePage(userId: widget.uid),
+    ];
+  }
 
-  final List<PreferredSizeWidget> _appBars = [
-    AppBar(
-      automaticallyImplyLeading: false,
-      flexibleSpace: TopWidgetHome(),
-      backgroundColor: Color.fromRGBO(238, 221, 198, 1),
-    ),
-    AppBar(
-      automaticallyImplyLeading: false,
-      flexibleSpace: TopWidgetChat(),
-      backgroundColor: Color.fromRGBO(238, 221, 198, 1),
-    ),
-    AppBar(
-      automaticallyImplyLeading: false,
-      flexibleSpace: TopWidgetOrders(),
-      backgroundColor: Color.fromRGBO(238, 221, 198, 1),
-    ),
-    AppBar(
-      automaticallyImplyLeading: false,
-      flexibleSpace: TopWidgetProfile(),
-      backgroundColor: Color.fromRGBO(238, 221, 198, 1),
-    ),
-  ];
+  List<PreferredSizeWidget> _getAppBars() {
+    return [
+      AppBar(
+        automaticallyImplyLeading: false,
+        flexibleSpace: TopWidgetHome(uid: widget.uid),
+        backgroundColor: Color.fromRGBO(238, 221, 198, 1),
+      ),
+      AppBar(
+        automaticallyImplyLeading: false,
+        flexibleSpace: TopWidgetChat(),
+        backgroundColor: Color.fromRGBO(238, 221, 198, 1),
+      ),
+      AppBar(
+        automaticallyImplyLeading: false,
+        flexibleSpace: TopWidgetOrders(),
+        backgroundColor: Color.fromRGBO(238, 221, 198, 1),
+      ),
+      AppBar(
+        automaticallyImplyLeading: false,
+        flexibleSpace: TopWidgetProfile(),
+        backgroundColor: Color.fromRGBO(238, 221, 198, 1),
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: _appBars[_selectedIndex],
-        body: _widgetOptions[_selectedIndex],
+        appBar: _getAppBars()[_selectedIndex],
+        body: _getWidgetOptions()[_selectedIndex],
         backgroundColor: const Color.fromRGBO(238, 221, 198, 1),
         bottomNavigationBar: BottomNavigationBar(
           items: <BottomNavigationBarItem>[
@@ -101,6 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class TopWidgetHome extends StatefulWidget {
+  const TopWidgetHome({Key? key, required this.uid}) : super(key: key);
+  final String uid;
   @override
   _TopWidgetState createState() => _TopWidgetState();
 }
@@ -150,8 +156,7 @@ class _TopWidgetState extends State<TopWidgetHome> {
             width: 190,
             left: screenWidth * 0.2,
             child: FutureBuilder<String>(
-              future: DatabaseService()
-                  .fetchAddress('Hwk6nxoDNb58y9W6ek7w', 'Home'),
+              future: DatabaseService().fetchAddress(widget.uid, 'Home'),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Text('Loading...', textAlign: TextAlign.left);
@@ -302,6 +307,9 @@ class _TopWidgetProfileState extends State<TopWidgetProfile> {
 }
 
 class HomePage extends StatelessWidget {
+  final String userId;
+
+  const HomePage({Key? key, required this.userId}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -314,8 +322,8 @@ class HomePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 FutureBuilder<String>(
-                  future: DatabaseService().fetchUserName(
-                      'Hwk6nxoDNb58y9W6ek7w'), // Replace with actual user ID
+                  future: DatabaseService()
+                      .fetchUserName(userId), // Replace with actual user ID
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Loading(); // Placeholder while loading
@@ -385,7 +393,7 @@ class HomePage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8.0),
-                Categories(),
+                Categories(userId: userId),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -423,7 +431,7 @@ class HomePage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8.0),
-                TopRatedKitchenList()
+                TopRatedKitchenList(userId: userId),
               ],
             ),
           ),
@@ -461,6 +469,9 @@ class ChatPage extends StatelessWidget {
 }
 
 class OrdersPage extends StatelessWidget {
+  final String userId;
+
+  const OrdersPage({Key? key, required this.userId}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Column(children: [
@@ -479,10 +490,10 @@ class OrdersPage extends StatelessWidget {
         child: TabBarView(
           children: [
             OngoingOrders(
-              userId: 'Hwk6nxoDNb58y9W6ek7w',
+              userId: userId,
             ),
             HistoryOrders(
-              userId: 'Hwk6nxoDNb58y9W6ek7w',
+              userId: userId,
             ),
           ],
         ),
@@ -492,11 +503,14 @@ class OrdersPage extends StatelessWidget {
 }
 
 class ProfilePage extends StatelessWidget {
+  final String userId;
+
+  const ProfilePage({Key? key, required this.userId}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>?>(
-      future: DatabaseService().fetchUserProfile(
-          'Hwk6nxoDNb58y9W6ek7w'), // Replace with actual user ID
+      future: DatabaseService()
+          .fetchUserProfile(userId), // Replace with actual user ID
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: Loading()); // Placeholder while loading
@@ -530,7 +544,8 @@ class ProfilePage extends StatelessWidget {
                                       email: email,
                                       phoneNo: phoneNo,
                                       bio: bio,
-                                      id: 'Hwk6nxoDNb58y9W6ek7w',
+                                      id: userId,
+                                      iskitchen: false,
                                     )),
                           );
                         },
@@ -569,7 +584,8 @@ class ProfilePage extends StatelessWidget {
                                             email: email,
                                             phoneNo: phoneNo,
                                             bio: bio,
-                                            id: 'Hwk6nxoDNb58y9W6ek7w',
+                                            id: userId,
+                                            iskitchen: false,
                                           )),
                                 );
                               },
@@ -584,7 +600,7 @@ class ProfilePage extends StatelessWidget {
                                   context,
                                   MaterialPageRoute(
                                       builder: (context) => MyAddressPage(
-                                            id: 'Hwk6nxoDNb58y9W6ek7w',
+                                            id: userId,
                                           )),
                                 );
                               },
@@ -602,7 +618,13 @@ class ProfilePage extends StatelessWidget {
                               context,
                               title: 'About Us',
                               icon: Icons.shopping_cart,
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => AboutUsScreen()),
+                                );
+                              },
                               iconColor: Colors.green,
                             ),
                             _buildSection(

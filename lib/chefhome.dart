@@ -10,10 +10,9 @@ import 'package:flutter_application_1/widgets/loading.dart';
 import 'package:flutter_application_1/widgets/revenuechart.dart';
 
 class ChefHomeScreen extends StatefulWidget {
-  const ChefHomeScreen({Key? key}) : super(key: key);
+  final String kitchenId;
 
-  // Define kitchenId here if needed, or pass it via constructor if it's dynamic
-  final String kitchenId = 'abc'; // Example static kitchenId
+  ChefHomeScreen({Key? key, required this.kitchenId}) : super(key: key);
 
   @override
   _ChefHomeScreenState createState() => _ChefHomeScreenState();
@@ -26,7 +25,7 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
   @override
   void initState() {
     super.initState();
-    kitchenId = widget.kitchenId; // Initialize kitchenId here
+    kitchenId = widget.kitchenId;
   }
 
   @override
@@ -283,17 +282,31 @@ class _TopWidgetState extends State<TopWidgetHome> {
             top: 30,
             width: 190,
             left: screenWidth * 0.2,
-            child: FutureBuilder<String>(
-              future: DatabaseService().fetchAddress(widget.kitchenId, 'Home'),
+            child: FutureBuilder<Map<String, dynamic>?>(
+              future: DatabaseService().fetchKitchenProfile(widget.kitchenId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Text('Loading...', textAlign: TextAlign.left);
                 } else if (snapshot.hasError) {
-                  return Text('Error', textAlign: TextAlign.left);
+                  return Text('Error: ${snapshot.error}',
+                      textAlign: TextAlign.left);
                 } else {
+                  var kitchenData = snapshot.data ?? {};
+                  var address = kitchenData['address'] ?? {};
+
+                  // Check if address is a map and is empty
+                  if (address is! Map || address.isEmpty) {
+                    return Text('Error fetching address',
+                        textAlign: TextAlign.left);
+                  }
+
+                  String apartment = address['apartment'] ?? '';
+                  String street = address['street'] ?? '';
+                  String postCode = address['post_code'] ?? '';
+
                   return Text.rich(
                     TextSpan(
-                      text: snapshot.data ?? '',
+                      text: '$apartment, $street, $postCode',
                       style: TextStyle(
                         color: Color.fromRGBO(103, 103, 103, 1),
                         fontFamily: 'Poppins',
@@ -325,7 +338,8 @@ class _TopWidgetState extends State<TopWidgetHome> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => FoodListScreen()),
+                              builder: (context) =>
+                                  FoodListScreen(kitchenid: widget.kitchenId)),
                         )
                       },
                       child: Container(
@@ -379,9 +393,7 @@ class HomePage extends StatelessWidget {
       future: DatabaseService().fetchordersCount(kitchenId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-              child:
-                  Loading()); // Use CircularProgressIndicator for loading state
+          return Center(child: Loading());
         }
 
         if (snapshot.hasError) {
@@ -487,9 +499,7 @@ class HomePage extends StatelessWidget {
 
         final kitchenData = snapshot.data!;
         final rating = kitchenData['rating'] ?? 0.0;
-        final orderHistory =
-            List<Map<String, dynamic>>.from(kitchenData['order_history'] ?? []);
-        final reviewCount = orderHistory.length;
+        final reviewCount = kitchenData['numberOfReviews'] ?? 0;
 
         return Container(
           padding: EdgeInsets.all(16),
@@ -847,6 +857,7 @@ class ProfilePage extends StatelessWidget {
                                           phoneNo: phoneNo,
                                           bio: bio,
                                           id: kitchenId,
+                                          iskitchen: true,
                                         )),
                               );
                             },

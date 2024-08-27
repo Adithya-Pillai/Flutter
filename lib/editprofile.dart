@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_application_1/chefhome.dart';
 import 'package:flutter_application_1/home.dart';
 import 'package:flutter_application_1/services/database.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,6 +14,7 @@ class EditProfilePage extends StatefulWidget {
   final String avatarurl;
   final String bio;
   final String id;
+  final bool iskitchen;
 
   const EditProfilePage({
     Key? key,
@@ -22,6 +24,7 @@ class EditProfilePage extends StatefulWidget {
     required this.avatarurl,
     required this.bio,
     required this.id,
+    required this.iskitchen,
   }) : super(key: key);
 
   @override
@@ -81,11 +84,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
         final downloadURL = await storageRef.getDownloadURL();
 
-        // Update avatar URL in Firestore
-        await _db.updateUserData(
-          widget.id,
-          avatarurl: downloadURL,
-        );
+        if (widget.iskitchen) {
+          await _db.updateKitchenData(
+            widget.id,
+            kitchenimage: downloadURL,
+          );
+        } else {
+          await _db.updateUserData(
+            widget.id,
+            avatarurl: downloadURL,
+          );
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Profile picture updated successfully')),
@@ -104,22 +113,48 @@ class _EditProfilePageState extends State<EditProfilePage> {
     String newEmail = emailController.text.trim();
     String newPhoneNo = phoneController.text.trim();
     String newBio = bioController.text.trim();
-
     try {
-      await _db.updateUserData(
-        widget.id,
-        name: newName,
-        email: newEmail,
-        phoneNumber: newPhoneNo,
-        bio: newBio,
-      );
+      if (widget.iskitchen) {
+        final kitchen = await _db.fetchKitchenData(widget.id);
+        if (kitchen == null) {
+          throw 'Kitchen not found';
+        }
+        await _db.updateKitchenData(
+          widget.id,
+          name: newName,
+          email: newEmail,
+          phoneNumber: newPhoneNo,
+          bio: newBio,
+        );
+      } else {
+        final user = await _db.getUserData(widget.id);
+        if (user == null) {
+          throw 'User not found';
+        }
+        await _db.updateUserData(
+          widget.id,
+          name: newName,
+          email: newEmail,
+          phoneNumber: newPhoneNo,
+          bio: newBio,
+        );
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Profile updated successfully')),
       );
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+      final String id = widget.id;
+      if (widget.iskitchen) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => ChefHomeScreen(kitchenId: id)),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen(uid: id)),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update profile')),
@@ -158,7 +193,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               child: Column(
                 children: [
                   GestureDetector(
-                    onTap: _pickImage, // Pick image on tap
+                    onTap: _pickImage,
                     child: CircleAvatar(
                       radius: constraints.maxWidth * 0.15,
                       backgroundColor: Colors.grey,

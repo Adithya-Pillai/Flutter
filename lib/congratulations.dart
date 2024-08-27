@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/home.dart';
 
 class CongratulationsPage extends StatelessWidget {
-  const CongratulationsPage({Key? key}) : super(key: key);
+  final String userId;
+  const CongratulationsPage({Key? key, required this.userId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +43,10 @@ class CongratulationsPage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => HomeScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => HomeScreen(
+                            uid: userId,
+                          )),
                 );
               },
               style: ElevatedButton.styleFrom(

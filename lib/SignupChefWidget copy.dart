@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/home.dart';
-import 'package:flutter_application_1/LoginpageWidget.dart';
-import 'package:flutter_application_1/services/database.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:uuid/uuid.dart'; // Import UUID package
-import 'package:crypto/crypto.dart'; // Import crypto package
-import 'dart:convert'; // For utf8 encoding
+import 'package:flutter_application_1/LoginpageWidget.dart';
+import 'package:flutter_application_1/ChefLoginWidget.dart';
+import 'package:flutter_application_1/OtpWidget.dart';
+import 'package:flutter_application_1/AddNewItemScreen.dart';
 
-class SignupuserWidget extends StatefulWidget {
+class SignupchefWidget extends StatefulWidget {
   @override
-  _SignupuserWidgetState createState() => _SignupuserWidgetState();
+  _SignupchefWidgetState createState() => _SignupchefWidgetState();
 }
 
-class _SignupuserWidgetState extends State<SignupuserWidget> {
+class _SignupchefWidgetState extends State<SignupchefWidget> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -38,86 +36,13 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
     return password.length >= 6;
   }
 
-  String _hashPassword(String password) {
-    final bytes = utf8.encode(password); // Convert password to bytes
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
-
-  Future<void> _submitForm() async {
+  void _submitForm() {
     if (_formKey.currentState?.validate() ?? false) {
       if (_agreeToTerms) {
-        final email = _emailController.text.trim();
-        final password = _passwordController.text.trim();
-        final hashedPassword = _hashPassword(password);
-        final name = _nameController.text.trim();
-
-        bool emailInUse = await DatabaseService().isEmailInUse(email, false);
-        bool nameInUse = await DatabaseService().isNameInUse(name);
-
-        if (emailInUse) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Email is already in use')),
-          );
-        } else if (nameInUse) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Name is already in use')),
-          );
-        } else {
-          final userId = Uuid().v4(); // Generate a random user ID
-
-          final userData = {
-            'user_id': userId,
-            'name': _nameController.text.trim(),
-            'email': email,
-            'password': hashedPassword,
-            'phone_number': _phoneController.text.trim(),
-            'avatarurl': '',
-            'bio': '',
-            'addresses': [],
-            'ongoing_orders': [],
-            'order_history': [],
-            'notifications': [
-              {
-                'type': 'order_update',
-                'message': 'Your order is on the way!',
-              },
-            ],
-            'messages': [
-              {
-                'sender': 'support',
-                'message': 'How can we help you?',
-                'time': '10:30 AM',
-                'avatarImagePath': 'assets/images/support_avatar.png',
-              },
-            ],
-            'most_ordered_kitchen': [],
-          };
-
-          await DatabaseService().updateUserData(
-            userId,
-            name: userData['name'].toString(),
-            email: userData['email'].toString(),
-            password: userData['password'].toString(),
-            phoneNumber: userData['phone_number'].toString(),
-            avatarurl: "",
-            addresses: [],
-            bio: "",
-            ongoingOrders: [],
-            orderHistory: [],
-            notifications: (userData['notifications'] as List<dynamic>?)
-                ?.map((notification) => notification as Map<String, dynamic>)
-                .toList(),
-            messages: (userData['messages'] as List<dynamic>?)
-                ?.map((message) => message as Map<String, dynamic>)
-                .toList(),
-          );
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => HomeScreen(uid: userId)),
-          );
-        }
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ChefLoginWidget()),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('You must agree to the terms and conditions')),
@@ -132,12 +57,13 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
       body: SingleChildScrollView(
         child: Stack(
           children: <Widget>[
+            // Background Image
             Positioned(
               top: 0,
               left: 0,
               right: 0,
               child: Container(
-                height: 350,
+                height: 350, // Increased height for better visibility
                 decoration: const BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage(
@@ -150,7 +76,9 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
             Center(
               child: Column(
                 children: <Widget>[
-                  SizedBox(height: 250),
+                  SizedBox(
+                      height:
+                          250), // Adjusted to provide more space for the image
                   Container(
                     width: double.infinity,
                     decoration: const BoxDecoration(
@@ -166,12 +94,12 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
                         children: <Widget>[
                           const SizedBox(height: 30),
                           const Text(
-                            'SIGN - UP',
+                            'CHEF SIGN - UP',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Color.fromRGBO(201, 160, 112, 1),
                               fontFamily: 'Poppins',
-                              fontSize: 35,
+                              fontSize: 30,
                               fontWeight: FontWeight.normal,
                               decoration: TextDecoration.none,
                             ),
@@ -210,7 +138,7 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
                                 ),
                                 const SizedBox(height: 20),
                                 buildTextFormField(
-                                  'Email',
+                                  'Mail',
                                   Icons.mail,
                                   _emailController,
                                   validator: (value) {
@@ -322,14 +250,7 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
                                     ),
                                     const SizedBox(width: 5),
                                     GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  LoginpageWidget()),
-                                        );
-                                      },
+                                      onTap: () {},
                                       child: const Text(
                                         'LOG IN',
                                         style: TextStyle(

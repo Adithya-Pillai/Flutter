@@ -254,8 +254,14 @@ class DatabaseService {
 
       // Extract the ongoing orders list from the kitchen document
       List<dynamic> ongoingOrders = kitchenSnapshot.get('ongoing_orders') ?? [];
-      List<dynamic> historyOrders = kitchenSnapshot.get('order_history') ?? [];
-
+      List<dynamic> historyOrders = [];
+      try {
+        historyOrders = kitchenSnapshot.get('order_history') ?? [];
+      } catch (e) {
+        // Handle the case where 'order_history' doesn't exist in the document
+        print('order_history does not exist: $e');
+        historyOrders = []; // Default to an empty list
+      }
       // Return the counts of ongoing orders and order history
       return {
         'ongoingOrdersCount': ongoingOrders.length,
@@ -272,9 +278,12 @@ class DatabaseService {
 
   Future<String> fetchAddress(String Id, String addressType) async {
     try {
+      // Fetch user and kitchen documents
       DocumentSnapshot userSnapshot = await usersCollection.doc(Id).get();
       DocumentSnapshot kitchenSnapshot = await kitchensCollection.doc(Id).get();
+
       if (userSnapshot.exists) {
+        // Get addresses from user document
         List<dynamic> addresses = userSnapshot['addresses'] ?? [];
         Map<String, dynamic>? address = addresses.firstWhere(
           (addr) => addr['type'] == addressType,
@@ -282,11 +291,15 @@ class DatabaseService {
         );
 
         if (address != null) {
-          return address['address'];
+          // Return formatted string
+          String apartment = address['apartment'] ?? '';
+          String addressLine = address['address'] ?? '';
+          return '$apartment, $addressLine';
         } else {
           return 'Address type $addressType not found';
         }
       } else if (kitchenSnapshot.exists) {
+        // Return address from kitchen document
         return kitchenSnapshot['address'] ?? 'Address not found';
       } else {
         return 'Document does not exist';
@@ -294,6 +307,48 @@ class DatabaseService {
     } catch (e) {
       print('Error fetching address: $e');
       return 'Error fetching address';
+    }
+  }
+
+  Future<bool> isNameInUse(String name) async {
+    try {
+      // Query Firestore for both the 'users' and 'kitchens' collections
+      final QuerySnapshot userResult = await _firestore
+          .collection('users') // User collection
+          .where('name', isEqualTo: name)
+          .get();
+
+      final QuerySnapshot kitchenResult = await _firestore
+          .collection('kitchens') // Kitchen collection
+          .where('name', isEqualTo: name)
+          .get();
+
+      // Check if any documents were returned in either collection
+      return userResult.docs.isNotEmpty || kitchenResult.docs.isNotEmpty;
+    } catch (e) {
+      // Handle potential errors
+      print('Error checking name in use: $e');
+      return false;
+    }
+  }
+
+  Future<bool> isEmailInUse(String email, bool isKitchen) async {
+    try {
+      // Determine the collection to query based on the isKitchen flag
+      String collectionName = isKitchen ? 'kitchens' : 'users';
+
+      // Query the appropriate Firestore collection
+      final QuerySnapshot result = await _firestore
+          .collection(collectionName)
+          .where('email', isEqualTo: email)
+          .get();
+
+      // Check if any documents were returned
+      return result.docs.isNotEmpty;
+    } catch (e) {
+      // Handle potential errors
+      print('Error checking email in use: $e');
+      return false;
     }
   }
 
@@ -624,13 +679,27 @@ class DatabaseService {
           userOrderData['button1Text'] = 'Rate';
           userOrderData['button2Text'] = 'Re-order';
 
-          // Add the order to the order_history collection in the kitchen and user documents
-          List<dynamic> kitchenOrderHistory =
-              List<dynamic>.from(kitchenSnapshot['order_history'] ?? []);
-          kitchenOrderHistory.add(kitchenOrderData);
+          List<dynamic> kitchenOrderHistory;
+          try {
+            kitchenOrderHistory =
+                List<dynamic>.from(kitchenSnapshot.get('order_history'));
+          } catch (e) {
+            // Field doesn't exist, initialize an empty list
+            kitchenOrderHistory = [];
+          }
 
-          List<dynamic> userOrderHistory =
-              List<dynamic>.from(userSnapshot['order_history'] ?? []);
+// Retrieve or initialize the order_history collection for the user
+          List<dynamic> userOrderHistory;
+          try {
+            userOrderHistory =
+                List<dynamic>.from(userSnapshot.get('order_history'));
+          } catch (e) {
+            // Field doesn't exist, initialize an empty list
+            userOrderHistory = [];
+          }
+
+          // Add the order to the order_history collection in the kitchen and user documents
+          kitchenOrderHistory.add(kitchenOrderData);
           userOrderHistory.add(userOrderData);
 
           // Remove the order from ongoing_orders in both kitchen and user
@@ -677,16 +746,24 @@ class DatabaseService {
       for (var doc in querySnapshot.docs) {
         // Get the kitchen ID
         String kitchenId = doc.id;
-        // Get the items array from the document
-        List items = doc['items'];
 
-        // Filter items based on category_id and include kitchen_id
-        for (var item in items) {
-          if (item['category_id'] == category) {
-            // Add kitchen_id to each dish's data
-            item['kitchen_id'] = kitchenId;
-            dishes.add(item);
+        // Ensure doc.data() is not null and check if the items field exists and is a list
+        final data = doc.data() as Map<String, dynamic>?; // Cast to Map
+        if (data != null &&
+            data.containsKey('items') &&
+            data['items'] is List) {
+          List items = data['items'];
+
+          // Filter items based on category_id and include kitchen_id
+          for (var item in items) {
+            if (item['category_id'] == category) {
+              // Add kitchen_id to each dish's data
+              item['kitchen_id'] = kitchenId;
+              dishes.add(item);
+            }
           }
+        } else {
+          print('Missing or invalid "items" field in document: $kitchenId');
         }
       }
 
@@ -875,42 +952,51 @@ class DatabaseService {
       QuerySnapshot querySnapshot =
           await FirebaseFirestore.instance.collection('kitchens').get();
 
-      querySnapshot.docs.forEach((doc) {
+      for (var doc in querySnapshot.docs) {
         Map<String, dynamic> kitchenData = doc.data() as Map<String, dynamic>;
 
         // Retrieve the kitchen ID
-        String kid = doc
-            .id; // Assuming the ID is stored directly in Firestore document ID
+        String kid = doc.id;
 
+        // Ensure that the fields are of the expected types
         List<Map<String, dynamic>> ongoingOrders =
-            List<Map<String, dynamic>>.from(
-                kitchenData['ongoing_orders'] ?? []);
+            kitchenData['ongoing_orders'] is List
+                ? List<Map<String, dynamic>>.from(kitchenData['ongoing_orders'])
+                : [];
         List<Map<String, dynamic>> orderHistory =
-            List<Map<String, dynamic>>.from(kitchenData['order_history'] ?? []);
+            kitchenData['order_history'] is List
+                ? List<Map<String, dynamic>>.from(kitchenData['order_history'])
+                : [];
         List<Map<String, dynamic>> notifications =
-            List<Map<String, dynamic>>.from(kitchenData['notifications'] ?? []);
-        List<Map<String, dynamic>> messages =
-            List<Map<String, dynamic>>.from(kitchenData['messages'] ?? []);
-        List<Map<String, dynamic>> items =
-            List<Map<String, dynamic>>.from(kitchenData['items'] ?? []);
+            kitchenData['notifications'] is List
+                ? List<Map<String, dynamic>>.from(kitchenData['notifications'])
+                : [];
+        List<Map<String, dynamic>> messages = kitchenData['messages'] is List
+            ? List<Map<String, dynamic>>.from(kitchenData['messages'])
+            : [];
+        List<Map<String, dynamic>> items = kitchenData['items'] is List
+            ? List<Map<String, dynamic>>.from(kitchenData['items'])
+            : [];
 
         kitchens.add(Kitchen(
           kid: kid, // Assign the kitchen ID here
-          name: kitchenData['name'],
-          email: kitchenData['email'],
-          phoneNumber: kitchenData['phone_number'],
-          rating: kitchenData['rating'] ?? 0.0,
+          name: kitchenData['name'] ?? 'Unnamed Kitchen',
+          email: kitchenData['email'] ?? '',
+          phoneNumber: kitchenData['phone_number'] ?? '',
+          rating: (kitchenData['rating'] ?? 0.0) is num
+              ? (kitchenData['rating'] as num).toDouble()
+              : 0.0,
           subtitle: kitchenData['subtitle'] ?? '',
-          kitchenImage: kitchenData['kitchenimage'],
-          bio: kitchenData['bio'],
-          address: kitchenData['address'],
+          kitchenImage: kitchenData['kitchenimage'] ?? 'default_image_url',
+          bio: kitchenData['bio'] ?? '',
+          address: kitchenData['address'] ?? '',
           ongoingOrders: ongoingOrders,
           orderHistory: orderHistory,
           notifications: notifications,
           messages: messages,
           items: items,
         ));
-      });
+      }
 
       // Sort kitchens by rating in descending order
       kitchens.sort((a, b) => b.rating.compareTo(a.rating));

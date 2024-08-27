@@ -4,7 +4,9 @@ import 'package:flutter_application_1/models/category.dart';
 import 'package:flutter_application_1/widgets/loading.dart';
 
 class Categories extends StatelessWidget {
-  const Categories({Key? key}) : super(key: key);
+  final String userId;
+
+  const Categories({Key? key, required this.userId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +38,7 @@ class Categories extends StatelessWidget {
                       MaterialPageRoute(
                           builder: (context) => CategoryDishesScreen(
                                 category: categories[index].label,
+                                userId: userId,
                               )),
                     ),
                   },

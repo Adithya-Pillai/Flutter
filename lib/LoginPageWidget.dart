@@ -1,7 +1,10 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/home.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_application_1/SignupuserWidget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginpageWidget extends StatefulWidget {
   @override
@@ -25,14 +28,60 @@ class _LoginpageWidgetState extends State<LoginpageWidget> {
     return password.length >= 6;
   }
 
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // Proceed with login
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
-      );
+      try {
+        final email = _emailController.text.trim();
+        final password = _passwordController.text.trim();
+
+        // Check credentials
+        final user = await _checkUserCredentials(email, password);
+
+        if (user != null) {
+          // Proceed with login
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomeScreen(uid: user['uid']),
+            ),
+          );
+        } else {
+          // Show error if credentials are incorrect
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Invalid email or password')),
+          );
+        }
+      } catch (e) {
+        print('Error during login: $e');
+        // Optionally, handle the error by showing a message to the user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('An error occurred. Please try again.')),
+        );
+      }
     }
+  }
+
+  Future<Map<String, dynamic>?> _checkUserCredentials(
+      String email, String password) async {
+    final userCollection = FirebaseFirestore.instance.collection('users');
+    final querySnapshot =
+        await userCollection.where('email', isEqualTo: email).get();
+    final bytes = utf8.encode(password);
+    final digest = sha256.convert(bytes);
+    if (querySnapshot.docs.isNotEmpty) {
+      final userData = querySnapshot.docs.first;
+      if (userData['password'] == digest.toString()) {
+        return userData.id == null
+            ? null
+            : {
+                'uid': userData.id,
+                'email': userData['email'],
+                'name': userData['name'],
+              };
+      }
+    }
+
+    return null; // Return null if email doesn't exist or password is incorrect
   }
 
   @override
@@ -149,21 +198,6 @@ class _LoginpageWidgetState extends State<LoginpageWidget> {
                                       ),
                                     ),
                                   ],
-                                ),
-                                GestureDetector(
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => HomeScreen()),
-                                  ),
-                                  child: Text(
-                                    'Forgot Password',
-                                    style: TextStyle(
-                                      color: Color.fromRGBO(65, 93, 241, 1),
-                                      fontFamily: 'Poppins',
-                                      fontSize: 14,
-                                    ),
-                                  ),
                                 ),
                               ],
                             ),

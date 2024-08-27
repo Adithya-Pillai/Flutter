@@ -1,7 +1,9 @@
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_application_1/chefhome.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter_application_1/SignupuserWidget.dart';
+import 'package:flutter_application_1/SignupChefWidget.dart';
 
 class ChefLoginWidget extends StatefulWidget {
   @override
@@ -25,14 +27,59 @@ class _ChefLoginWidgetState extends State<ChefLoginWidget> {
     return password.length >= 6;
   }
 
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // Proceed with login
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => ChefHomeScreen()),
-      );
+      try {
+        final email = _emailController.text.trim();
+        final password = _passwordController.text.trim();
+
+        // Check credentials
+        final chef = await _checkChefCredentials(email, password);
+
+        if (chef != null) {
+          // Proceed with login
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChefHomeScreen(kitchenId: chef['uid']),
+            ),
+          );
+        } else {
+          // Show error if credentials are incorrect
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Invalid email or password')),
+          );
+        }
+      } catch (e) {
+        print('Error during login: $e');
+        // Optionally, handle the error by showing a message to the user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('An error occurred. Please try again.')),
+        );
+      }
     }
+  }
+
+  Future<Map<String, dynamic>?> _checkChefCredentials(
+      String email, String password) async {
+    final chefCollection = FirebaseFirestore.instance.collection('kitchens');
+    final querySnapshot =
+        await chefCollection.where('email', isEqualTo: email).get();
+    final bytes = utf8.encode(password);
+    final digest = sha256.convert(bytes);
+
+    if (querySnapshot.docs.isNotEmpty) {
+      final chefData = querySnapshot.docs.first;
+      if (chefData['password'] == digest.toString()) {
+        return {
+          'uid': chefData.id,
+          'email': chefData['email'],
+          'name': chefData['name'],
+        };
+      }
+    }
+
+    return null; // Return null if email doesn't exist or password is incorrect
   }
 
   @override
@@ -150,12 +197,17 @@ class _ChefLoginWidgetState extends State<ChefLoginWidget> {
                                     ),
                                   ],
                                 ),
-                                Text(
-                                  'Forgot Password',
-                                  style: TextStyle(
-                                    color: Color.fromRGBO(65, 93, 241, 1),
-                                    fontFamily: 'Poppins',
-                                    fontSize: 14,
+                                GestureDetector(
+                                  onTap: () {
+                                    // Implement forgot password functionality here
+                                  },
+                                  child: Text(
+                                    'Forgot Password',
+                                    style: TextStyle(
+                                      color: Color.fromRGBO(65, 93, 241, 1),
+                                      fontFamily: 'Poppins',
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -200,7 +252,7 @@ class _ChefLoginWidgetState extends State<ChefLoginWidget> {
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) =>
-                                              ChefHomeScreen()),
+                                              SignupchefWidget()),
                                     );
                                   },
                                   child: Text(

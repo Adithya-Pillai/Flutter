@@ -5,8 +5,10 @@ import 'package:flutter_application_1/widgets/loading.dart';
 
 class CategoryDishesScreen extends StatefulWidget {
   final String category;
+  final String userId;
 
-  const CategoryDishesScreen({Key? key, required this.category})
+  const CategoryDishesScreen(
+      {Key? key, required this.category, required this.userId})
       : super(key: key);
 
   @override
@@ -85,6 +87,7 @@ class _CategoryDishesScreenState extends State<CategoryDishesScreen> {
                       MaterialPageRoute(
                           builder: (context) => RestaurantViewScreen(
                                 kitchenId: dish['kitchen_id'],
+                                userId: widget.userId,
                               )),
                     );
                   },

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/home.dart';
-import 'package:flutter_application_1/LoginpageWidget.dart';
+import 'package:flutter_application_1/ChefLoginWidget.dart';
+import 'package:flutter_application_1/chefhome.dart';
 import 'package:flutter_application_1/services/database.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:uuid/uuid.dart'; // Import UUID package
 import 'package:crypto/crypto.dart'; // Import crypto package
 import 'dart:convert'; // For utf8 encoding
 
-class SignupuserWidget extends StatefulWidget {
+class SignupchefWidget extends StatefulWidget {
   @override
-  _SignupuserWidgetState createState() => _SignupuserWidgetState();
+  _SignupchefWidgetState createState() => _SignupchefWidgetState();
 }
 
-class _SignupuserWidgetState extends State<SignupuserWidget> {
+class _SignupchefWidgetState extends State<SignupchefWidget> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -20,6 +20,8 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+  final TextEditingController _bioController = TextEditingController();
+  final TextEditingController _subtitleController = TextEditingController();
   bool _agreeToTerms = false;
 
   bool _validateEmail(String email) {
@@ -39,7 +41,7 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
   }
 
   String _hashPassword(String password) {
-    final bytes = utf8.encode(password); // Convert password to bytes
+    final bytes = utf8.encode(password);
     final digest = sha256.convert(bytes);
     return digest.toString();
   }
@@ -51,8 +53,10 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
         final password = _passwordController.text.trim();
         final hashedPassword = _hashPassword(password);
         final name = _nameController.text.trim();
+        final bio = _bioController.text.trim();
+        final subtitle = _subtitleController.text.trim();
 
-        bool emailInUse = await DatabaseService().isEmailInUse(email, false);
+        bool emailInUse = await DatabaseService().isEmailInUse(email, true);
         bool nameInUse = await DatabaseService().isNameInUse(name);
 
         if (emailInUse) {
@@ -64,16 +68,17 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
             SnackBar(content: Text('Name is already in use')),
           );
         } else {
-          final userId = Uuid().v4(); // Generate a random user ID
+          final kitchenId = Uuid().v4(); // Generate a random kitchen Id
 
-          final userData = {
-            'user_id': userId,
-            'name': _nameController.text.trim(),
+          final kitchenData = {
+            'kitchen_id': kitchenId,
+            'name': name,
             'email': email,
             'password': hashedPassword,
             'phone_number': _phoneController.text.trim(),
             'avatarurl': '',
-            'bio': '',
+            'bio': bio,
+            'subtitle': subtitle,
             'addresses': [],
             'ongoing_orders': [],
             'order_history': [],
@@ -93,29 +98,47 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
             ],
             'most_ordered_kitchen': [],
           };
-
-          await DatabaseService().updateUserData(
-            userId,
-            name: userData['name'].toString(),
-            email: userData['email'].toString(),
-            password: userData['password'].toString(),
-            phoneNumber: userData['phone_number'].toString(),
-            avatarurl: "",
-            addresses: [],
-            bio: "",
-            ongoingOrders: [],
-            orderHistory: [],
-            notifications: (userData['notifications'] as List<dynamic>?)
-                ?.map((notification) => notification as Map<String, dynamic>)
-                .toList(),
-            messages: (userData['messages'] as List<dynamic>?)
-                ?.map((message) => message as Map<String, dynamic>)
-                .toList(),
+          await DatabaseService().updateKitchenData(
+            kitchenId,
+            name: kitchenData['name']?.toString() ?? "Default Name",
+            email: kitchenData['email']?.toString() ?? "default@example.com",
+            password: kitchenData['password']?.toString() ?? "",
+            phoneNumber: kitchenData['phone_number']?.toString() ?? "",
+            items: (kitchenData['items'] as List<dynamic>?)
+                    ?.map((item) => item as Map<String, dynamic>)
+                    .toList() ??
+                [],
+            kitchenimage: kitchenData['kitchenimage']?.toString() ??
+                "https://your-default-image-url.com",
+            address: kitchenData['address']?.toString() ?? "Default Address",
+            bio: kitchenData['bio']?.toString() ?? "Default Bio",
+            subtitle: kitchenData['subtitle']?.toString() ?? "Default Subtitle",
+            rating: 0.0,
+            ongoingOrders: (kitchenData['ongoingOrders'] as List<dynamic>?)
+                    ?.map((order) => order as Map<String, dynamic>)
+                    .toList() ??
+                [],
+            orderHistory: (kitchenData['orderHistory'] as List<dynamic>?)
+                    ?.map((history) => history as Map<String, dynamic>)
+                    .toList() ??
+                [],
+            notifications: (kitchenData['notifications'] as List<dynamic>?)
+                    ?.map(
+                        (notification) => notification as Map<String, dynamic>)
+                    .toList() ??
+                [],
+            messages: (kitchenData['messages'] as List<dynamic>?)
+                    ?.map((message) => message as Map<String, dynamic>)
+                    .toList() ??
+                [],
           );
 
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen(uid: userId)),
+            MaterialPageRoute(
+                builder: (context) => ChefHomeScreen(
+                      kitchenId: kitchenId,
+                    )),
           );
         }
       } else {
@@ -166,7 +189,7 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
                         children: <Widget>[
                           const SizedBox(height: 30),
                           const Text(
-                            'SIGN - UP',
+                            'CHEF SIGN - UP',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Color.fromRGBO(201, 160, 112, 1),
@@ -254,6 +277,31 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
                                   },
                                 ),
                                 const SizedBox(height: 20),
+                                buildTextFormField(
+                                  'Bio',
+                                  Icons.info,
+                                  _bioController,
+                                  maxLines: 4,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter a bio';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 20),
+                                buildTextFormField(
+                                  'Subtitle',
+                                  Icons.short_text,
+                                  _subtitleController,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter a subtitle';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 20),
                                 Row(
                                   children: <Widget>[
                                     Checkbox(
@@ -327,7 +375,7 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
                                           context,
                                           MaterialPageRoute(
                                               builder: (context) =>
-                                                  LoginpageWidget()),
+                                                  ChefLoginWidget()),
                                         );
                                       },
                                       child: const Text(
@@ -391,10 +439,13 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
 
   Widget buildTextFormField(
       String labelText, IconData icon, TextEditingController controller,
-      {bool obscureText = false, String? Function(String?)? validator}) {
+      {bool obscureText = false,
+      String? Function(String?)? validator,
+      int maxLines = 1}) {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
+      maxLines: maxLines,
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: Color.fromRGBO(185, 190, 206, 1)),
         labelText: labelText,
@@ -417,7 +468,13 @@ class _SignupuserWidgetState extends State<SignupuserWidget> {
           ),
         ),
       ),
-      validator: validator,
+      validator: validator ??
+          (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter $labelText';
+            }
+            return null;
+          },
     );
   }
 }

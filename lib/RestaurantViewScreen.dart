@@ -7,8 +7,10 @@ import 'package:provider/provider.dart';
 
 class RestaurantViewScreen extends StatefulWidget {
   final String kitchenId;
+  final String userId;
 
-  const RestaurantViewScreen({Key? key, required this.kitchenId})
+  const RestaurantViewScreen(
+      {Key? key, required this.kitchenId, required this.userId})
       : super(key: key);
 
   @override
@@ -103,8 +105,8 @@ class _RestaurantViewScreenState extends State<RestaurantViewScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) =>
-                          FoodOrderPage(kitchenId: widget.kitchenId)),
+                      builder: (context) => FoodOrderPage(
+                          kitchenId: widget.kitchenId, userId: widget.userId)),
                 )
               },
               child: Stack(

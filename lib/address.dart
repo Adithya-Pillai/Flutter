@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/address_page.dart';
+import 'package:flutter_application_1/useraddressing.dart';
+import 'package:flutter_application_1/kitchenaddressing.dart';
 import 'package:flutter_application_1/services/database.dart';
 import 'package:flutter_application_1/widgets/loading.dart';
 
@@ -172,7 +173,7 @@ class _MyAddressPageState extends State<MyAddressPage> {
   void _addNewAddress() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => AddAddressPage()),
+      MaterialPageRoute(builder: (context) => AddAddressPage(id: widget.id)),
     );
   }
 
@@ -260,7 +261,58 @@ class _KitchenAddressPageState extends State<KitchenAddressPage> {
               return Center(child: Text('Error: ${snapshot.error}'));
             } else {
               var kitchenData = snapshot.data ?? {};
-              var address = kitchenData['address'] ?? '';
+              var addressMap = kitchenData['address'] ?? {};
+
+              if (addressMap is! Map || addressMap.isEmpty) {
+                // Show message and button to add an address
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'No address found. Please add an address.',
+                        style: TextStyle(
+                          color: Color.fromRGBO(103, 103, 103, 1),
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFD19A73),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: _addNewAddress,
+                          child: Text(
+                            'ADD ADDRESS',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              // Extract address fields
+              String apartment = addressMap['apartment'] ?? '';
+              String street = addressMap['street'] ?? '';
+              String postCode = addressMap['post_code'] ?? '';
+
+              // Combine fields to form the complete address
+              String address = '$apartment, $street, $postCode';
 
               return Column(
                 children: [
@@ -369,7 +421,11 @@ class _KitchenAddressPageState extends State<KitchenAddressPage> {
   void _addNewAddress() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => AddAddressPage()),
+      MaterialPageRoute(
+        builder: (context) => AddAddressPageKitchen(
+          id: widget.kitchenId,
+        ),
+      ),
     );
   }
 
@@ -377,10 +433,10 @@ class _KitchenAddressPageState extends State<KitchenAddressPage> {
     try {
       var kitchenData = await _dbService.fetchKitchenProfile(widget.kitchenId);
       if (kitchenData != null) {
-        var address = kitchenData['address'] ?? '';
+        var address = kitchenData['address'] ?? {};
 
         // Update kitchen data in Firestore
-        await _dbService.updateKitchenData(widget.kitchenId, address: '');
+        await _dbService.updateKitchenData(widget.kitchenId, address: "");
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Address deleted successfully'),

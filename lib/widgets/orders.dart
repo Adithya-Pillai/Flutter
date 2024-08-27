@@ -87,11 +87,17 @@ class OrderCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    final kitchenIdFuture =
+                        DatabaseService().fetchKitchenIdByName(name);
+                    final kid = await kitchenIdFuture;
                     if (button1Text == 'Rate') {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => ReviewScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => ReviewScreen(
+                                  kitchenId: kid,
+                                )),
                       );
                     }
                   },

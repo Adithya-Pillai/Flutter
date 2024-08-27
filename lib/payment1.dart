@@ -4,19 +4,21 @@ import 'package:flutter_application_1/congratulations.dart';
 import 'package:flutter_application_1/payment2.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_application_1/services/database.dart';
+import 'package:flutter_application_1/widgets/loading.dart';
 
 class Androidlarge21Widget extends StatefulWidget {
   final List<CartItem> cartItems;
   final String kitchenId;
   final double total;
-  final String uid = 'Hwk6nxoDNb58y9W6ek7w';
+  final String userId;
 
-  const Androidlarge21Widget(
-      {Key? key,
-      required this.cartItems,
-      required this.kitchenId,
-      required this.total})
-      : super(key: key);
+  const Androidlarge21Widget({
+    Key? key,
+    required this.cartItems,
+    required this.kitchenId,
+    required this.total,
+    required this.userId,
+  }) : super(key: key);
 
   @override
   _Androidlarge21WidgetState createState() => _Androidlarge21WidgetState();
@@ -24,6 +26,7 @@ class Androidlarge21Widget extends StatefulWidget {
 
 class _Androidlarge21WidgetState extends State<Androidlarge21Widget> {
   bool _showUPIInput = false;
+  bool _isLoading = false; // New variable to manage loading state
 
   void _toggleUPIInput() {
     setState(() {
@@ -32,16 +35,19 @@ class _Androidlarge21WidgetState extends State<Androidlarge21Widget> {
   }
 
   Future<void> _navigateToCongratulationsPage() async {
+    setState(() {
+      _isLoading = true; // Show the loader
+    });
+
     try {
       // Fetch kitchen and user names asynchronously
       final kitchenNameFuture =
           DatabaseService().fetchKitchenName(widget.kitchenId);
-      final userNameFuture = DatabaseService().fetchUserName(widget.uid);
+      final userNameFuture = DatabaseService().fetchUserName(widget.userId);
       final kitchenimageUrlFuture =
           DatabaseService().fetchImageurlkitchen(widget.kitchenId);
-      print(widget.kitchenId);
       final userimageUrlFuture =
-          DatabaseService().fetchImageurluser(widget.uid);
+          DatabaseService().fetchImageurluser(widget.userId);
 
       // Wait for both futures to complete
       final kitchenName = await kitchenNameFuture;
@@ -95,7 +101,7 @@ class _Androidlarge21WidgetState extends State<Androidlarge21Widget> {
             .collection('kitchens')
             .doc(widget.kitchenId);
         DocumentReference userDocRef =
-            FirebaseFirestore.instance.collection('users').doc(widget.uid);
+            FirebaseFirestore.instance.collection('users').doc(widget.userId);
 
         // Fetch the current data for the kitchen
         DocumentSnapshot kitchenSnapshot = await transaction.get(kitchenDocRef);
@@ -143,11 +149,16 @@ class _Androidlarge21WidgetState extends State<Androidlarge21Widget> {
       // Navigate to the Congratulations page
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => CongratulationsPage()),
+        MaterialPageRoute(
+            builder: (context) => CongratulationsPage(userId: widget.userId)),
       );
     } catch (e) {
       print('Error navigating to Congratulations page: $e');
       // Optionally, handle the error by showing a message to the user
+    } finally {
+      setState(() {
+        _isLoading = false; // Hide the loader
+      });
     }
   }
 
@@ -177,85 +188,89 @@ class _Androidlarge21WidgetState extends State<Androidlarge21Widget> {
         centerTitle: true,
       ),
       backgroundColor: Color(0xFFEEE0C6),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: screenWidth * 0.05,
-          vertical: screenHeight * 0.03,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: screenHeight * 0.03),
-            Text(
-              'You are almost there...Choose your payment method',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: screenWidth * 0.07,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+      body: _isLoading
+          ? Center(
+              child: Loading(),
+            )
+          : SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.05,
+                vertical: screenHeight * 0.03,
               ),
-            ),
-            SizedBox(height: screenHeight * 0.03),
-            paymentMethodItem(
-                context, 'Visa', 'assets/images/payment1/visa.png'),
-            GestureDetector(
-              onTap: _toggleUPIInput,
-              child: paymentMethodItem(
-                  context, 'UPI Payment', 'assets/images/payment1/upi.png'),
-            ),
-            if (_showUPIInput) ...[
-              SizedBox(height: screenHeight * 0.02),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Enter UPI ID',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-            ],
-            SizedBox(height: screenHeight * 0.02),
-            GestureDetector(
-              onTap: _navigateToCongratulationsPage,
-              child: paymentMethodItem(context, 'Cash on Delivery',
-                  'assets/images/payment1/cash.png'),
-            ),
-            SizedBox(height: screenHeight * 0.03),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Total',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: screenWidth * 0.045,
-                    color: Color(0xFF5B645F),
-                  ),
-                ),
-                Row(
-                  children: [
-                    Image.asset(
-                      'assets/images/payment1/rupee.png',
-                      width: screenWidth * 0.06,
-                      height: screenWidth * 0.06,
-                      semanticLabel: 'currency_rupee',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: screenHeight * 0.03),
+                  Text(
+                    'You are almost there...Choose your payment method',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: screenWidth * 0.07,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
-                    SizedBox(width: screenWidth * 0.01),
-                    Text(
-                      '${widget.total.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: screenWidth * 0.045,
-                        color: Color(0xFF5B645F),
+                  ),
+                  SizedBox(height: screenHeight * 0.03),
+                  paymentMethodItem(
+                      context, 'Visa', 'assets/images/payment1/visa.png'),
+                  GestureDetector(
+                    onTap: _toggleUPIInput,
+                    child: paymentMethodItem(context, 'UPI Payment',
+                        'assets/images/payment1/upi.png'),
+                  ),
+                  if (_showUPIInput) ...[
+                    SizedBox(height: screenHeight * 0.02),
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Enter UPI ID',
+                        border: OutlineInputBorder(),
                       ),
+                      keyboardType: TextInputType.emailAddress,
                     ),
                   ],
-                ),
-              ],
+                  SizedBox(height: screenHeight * 0.02),
+                  GestureDetector(
+                    onTap: _navigateToCongratulationsPage,
+                    child: paymentMethodItem(context, 'Cash on Delivery',
+                        'assets/images/payment1/cash.png'),
+                  ),
+                  SizedBox(height: screenHeight * 0.03),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: screenWidth * 0.045,
+                          color: Color(0xFF5B645F),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Image.asset(
+                            'assets/images/payment1/rupee.png',
+                            width: screenWidth * 0.06,
+                            height: screenWidth * 0.06,
+                            semanticLabel: 'currency_rupee',
+                          ),
+                          SizedBox(width: screenWidth * 0.01),
+                          Text(
+                            '${widget.total.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: screenWidth * 0.045,
+                              color: Color(0xFF5B645F),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: screenHeight * 0.03),
+                ],
+              ),
             ),
-            SizedBox(height: screenHeight * 0.03),
-          ],
-        ),
-      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: ElevatedButton(
         onPressed: _navigateToCongratulationsPage,

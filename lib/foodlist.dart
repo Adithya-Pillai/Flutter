@@ -6,6 +6,10 @@ import 'package:flutter_application_1/widgets/loading.dart';
 import 'AddNewItemScreen.dart';
 
 class FoodListScreen extends StatefulWidget {
+  final String kitchenid;
+
+  FoodListScreen({required this.kitchenid});
+
   @override
   _FoodListScreenState createState() => _FoodListScreenState();
 }
@@ -87,7 +91,7 @@ class _FoodListScreenState extends State<FoodListScreen> {
       body: Container(
         color: Color(0xFFEEDDC6),
         child: FutureBuilder<List<Map<String, dynamic>>>(
-          future: DatabaseService().getFoodList('abc', _deleteItem),
+          future: DatabaseService().getFoodList(widget.kitchenid, _deleteItem),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               print("Error in snapshot: ${snapshot.error}");
@@ -134,7 +138,9 @@ class _FoodListScreenState extends State<FoodListScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => AddNewItemScreen()),
+            MaterialPageRoute(
+                builder: (context) =>
+                    AddNewItemScreen(kitchenid: widget.kitchenid)),
           );
         },
         child: Icon(Icons.add),

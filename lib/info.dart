@@ -9,6 +9,7 @@ class PersonalInfoPage extends StatelessWidget {
   final String avatarurl;
   final String bio;
   final String id;
+  final bool iskitchen;
 
   const PersonalInfoPage({
     Key? key,
@@ -18,6 +19,7 @@ class PersonalInfoPage extends StatelessWidget {
     required this.avatarurl,
     required this.bio,
     required this.id,
+    required this.iskitchen,
   }) : super(key: key);
 
   @override
@@ -54,6 +56,7 @@ class PersonalInfoPage extends StatelessWidget {
                           phoneNo: phoneNo,
                           bio: bio,
                           id: id,
+                          iskitchen: iskitchen,
                         )),
               );
             },
@@ -108,21 +111,6 @@ class PersonalInfoPage extends StatelessWidget {
               iconColor: Colors.green,
             ),
             Spacer(),
-            ElevatedButton(
-              onPressed: () {
-                // Handle change password button press
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                textStyle: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.bold,
-                ),
-                padding: EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-              ),
-              child: Text('CHANGE PASSWORD'),
-            ),
             SizedBox(height: 16),
           ],
         ),

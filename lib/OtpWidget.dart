@@ -5,6 +5,9 @@ import 'package:flutter_application_1/get_Started.dart';
 import 'package:flutter_application_1/AddNewItemScreen.dart';
 
 class OtpWidget extends StatelessWidget {
+  final String userId;
+
+  const OtpWidget({Key? key, required this.userId}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,7 +80,9 @@ class OtpWidget extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => HomeScreen()),
+                                builder: (context) => HomeScreen(
+                                      uid: 'abc',
+                                    )),
                           );
                         },
                         style: ElevatedButton.styleFrom(

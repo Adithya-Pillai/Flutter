@@ -7,8 +7,10 @@ import 'package:get/get.dart';
 
 class FoodOrderPage extends StatefulWidget {
   final String kitchenId;
+  final String userId;
 
-  const FoodOrderPage({Key? key, required this.kitchenId}) : super(key: key);
+  const FoodOrderPage({Key? key, required this.kitchenId, required this.userId})
+      : super(key: key);
 
   @override
   _FoodOrderPageState createState() => _FoodOrderPageState();
@@ -114,6 +116,7 @@ class _FoodOrderPageState extends State<FoodOrderPage> {
                   cartItems: cartProvider.cartItems,
                   kitchenId: widget.kitchenId,
                   total: totalAmount,
+                  userId: widget.userId,
                 ),
               ],
             ),
@@ -152,12 +155,14 @@ class PaymentMethodWidget extends StatelessWidget {
   final List<CartItem> cartItems;
   final String kitchenId;
   final double total;
+  final String userId;
 
   PaymentMethodWidget({
     required this.screenWidth,
     required this.cartItems,
     required this.kitchenId,
     required this.total,
+    required this.userId,
   });
 
   @override
@@ -182,6 +187,7 @@ class PaymentMethodWidget extends StatelessWidget {
                 cartItems: cartItems,
                 kitchenId: kitchenId,
                 total: total,
+                userId: userId,
               ),
             ),
           );

@@ -7,6 +7,9 @@ import 'dart:io';
 import 'foodlist.dart';
 
 class AddNewItemScreen extends StatefulWidget {
+  final String kitchenid;
+
+  AddNewItemScreen({required this.kitchenid});
   @override
   _AddNewItemScreenState createState() => _AddNewItemScreenState();
 }
@@ -100,7 +103,7 @@ class _AddNewItemScreenState extends State<AddNewItemScreen> {
 
     try {
       DocumentReference kitchenRef =
-          _firestore.collection('kitchens').doc('abc');
+          _firestore.collection('kitchens').doc(widget.kitchenid);
       DocumentSnapshot kitchenDoc = await kitchenRef.get();
       List<dynamic> items = List.from(kitchenDoc['items']);
 
@@ -130,7 +133,10 @@ class _AddNewItemScreenState extends State<AddNewItemScreen> {
 
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => ChefHomeScreen()),
+        MaterialPageRoute(
+            builder: (context) => ChefHomeScreen(
+                  kitchenId: widget.kitchenid,
+                )),
       );
     } catch (e) {
       print('Error submitting item: $e');

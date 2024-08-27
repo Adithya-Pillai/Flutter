@@ -117,8 +117,7 @@ class Tutorial1 extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (context) => LocationAccessWidget()),
+                    MaterialPageRoute(builder: (context) => MainloginWidget()),
                   );
                 },
                 child: const Text(
@@ -253,8 +252,7 @@ class Tutorial2 extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (context) => LocationAccessWidget()),
+                    MaterialPageRoute(builder: (context) => MainloginWidget()),
                   );
                 },
                 child: const Text(
@@ -281,8 +279,6 @@ class Tutorial2 extends StatelessWidget {
 class Tutorial3 extends StatelessWidget {
   Tutorial3({super.key});
   final DatabaseService databaseService = DatabaseService();
-  final String uid = 'Hwk6nxoDNb58y9W6ek7w';
-  final String kid = 'abc';
 
   @override
   Widget build(BuildContext context) {
@@ -365,7 +361,7 @@ class Tutorial3 extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => LocationAccessWidget()),
+                          builder: (context) => MainloginWidget()),
                     );
                   },
                   child: const Center(
@@ -393,8 +389,7 @@ class Tutorial3 extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (context) => LocationAccessWidget()),
+                    MaterialPageRoute(builder: (context) => MainloginWidget()),
                   );
                 },
                 child: const Text(

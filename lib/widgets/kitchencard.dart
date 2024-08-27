@@ -8,7 +8,8 @@ import 'package:flutter_application_1/widgets/loading.dart';
 import 'package:provider/provider.dart';
 
 class TopRatedKitchenList extends StatelessWidget {
-  const TopRatedKitchenList({Key? key}) : super(key: key);
+  final String userId;
+  TopRatedKitchenList({required this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +35,7 @@ class TopRatedKitchenList extends StatelessWidget {
           child: SingleChildScrollView(
             child: Column(
               children: kitchens.map((kitchen) {
-                return TopRatedKitchenCard(kitchen: kitchen);
+                return TopRatedKitchenCard(kitchen: kitchen, userId: userId);
               }).toList(),
             ),
           ),
@@ -46,8 +47,10 @@ class TopRatedKitchenList extends StatelessWidget {
 
 class TopRatedKitchenCard extends StatelessWidget {
   final Kitchen kitchen;
+  final String userId;
 
-  const TopRatedKitchenCard({Key? key, required this.kitchen})
+  const TopRatedKitchenCard(
+      {Key? key, required this.kitchen, required this.userId})
       : super(key: key);
 
   @override
@@ -60,6 +63,7 @@ class TopRatedKitchenCard extends StatelessWidget {
           MaterialPageRoute(
               builder: (context) => RestaurantViewScreen(
                     kitchenId: kitchen.kid,
+                    userId: userId,
                   )),
         );
       },
